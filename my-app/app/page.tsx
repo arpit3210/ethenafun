@@ -5,6 +5,7 @@ import Sidebar from "./components/sidebar"
 import GameCard from "./components/game-card"
 import Banner from "./components/banner"
 import TransactionHistory from "./components/transaction-history"
+
 import Footer from "./components/footer"
 
 export default function Home() {
@@ -45,25 +46,25 @@ export default function Home() {
               <GameCard
                 title="HEAD OR TAIL"
                 bgColor="from-purple-500 to-indigo-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/head-or-tail.png"
                 href="/head-or-tail"
               />
               <GameCard
                 title="SINGLE DICE"
                 bgColor="from-green-500 to-teal-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/single-dice.png"
                 href="/single-dice"
               />
               <GameCard
                 title="DOUBLE DICE"
                 bgColor="from-blue-500 to-cyan-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/double.png"
                 href="/double-dice"
               />
               <GameCard
                 title="ROCK-PAPER-SCISSORS"
                 bgColor="from-red-500 to-orange-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/rock-papper.jpg"
                 href="/rock-paper"
               />
             </div>
