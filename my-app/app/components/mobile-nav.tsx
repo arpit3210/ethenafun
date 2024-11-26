@@ -1,62 +1,93 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
+"use client"
 
-const MobileNav = () => {
-  const [isOpen, setIsOpen] = useState(false);
+import * as React from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { Menu } from 'lucide-react'
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
-  };
+import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
+
+const routes = [
+  {
+    href: "/",
+    label: "Home",
+    icon: "🏠"
+  },
+  {
+    href: "/head-or-tail",
+    label: "Head or Tail",
+    icon: "🎯"
+  },
+  {
+    href: "/single-dice",
+    label: "Single Dice",
+    icon: "🎲"
+  },
+  {
+    href: "/double-dice",
+    label: "Double Dice",
+    icon: "🎲"
+  },
+  {
+    href: "/rock-paper",
+    label: "Rock Paper",
+    icon: "✂️"
+  },
+  {
+    href: "/rock-paper-plus",
+    label: "Rock Paper ++",
+    icon: "✂️"
+  }
+]
+
+export function MobileNav() {
+  const pathname = usePathname()
+  const [open, setOpen] = React.useState(false)
 
   return (
-    <div className="md:hidden">
-      <button
-        onClick={toggleMenu}
-        className="p-2 text-gray-600 hover:text-gray-900"
-      >
-        <svg
-          className="w-6 h-6"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          className="mr-2 px-0 text-base hover:bg-transparent focus-visible:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 lg:hidden"
         >
-          {isOpen ? (
-            <path d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          )}
-        </svg>
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-16 left-0 right-0 bg-white shadow-lg z-50">
-          <nav className="flex flex-col p-4">
-            <Link href="/" className="py-2 text-gray-700 hover:text-blue-500">
-              Home
-            </Link>
-            <Link href="/single-dice" className="py-2 text-gray-700 hover:text-blue-500">
-              Single Dice
-            </Link>
-            <Link href="/double-dice" className="py-2 text-gray-700 hover:text-blue-500">
-              Double Dice
-            </Link>
-            <Link href="/head-or-tail" className="py-2 text-gray-700 hover:text-blue-500">
-              Head or Tail
-            </Link>
-            <Link href="/rock-paper" className="py-2 text-gray-700 hover:text-blue-500">
-              Rock Paper Scissors
-            </Link>
-            <Link href="/rock-paper-plus" className="py-2 text-gray-700 hover:text-blue-500">
-              Rock Paper Scissors Plus
-            </Link>
-          </nav>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default MobileNav;
+          <Menu className="h-6 w-6" />
+          <span className="sr-only">Toggle Menu</span>
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <SheetHeader>
+          <SheetTitle className="text-2xl font-bold tracking-tighter gradient-text">ETHENAFUN</SheetTitle>
+        </SheetHeader>
+        <nav className="mt-8">
+          <div className="flex flex-col space-y-3">
+            {routes.map((route) => (
+              <Link
+                key={route.href}
+                href={route.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-primary",
+                  pathname === route.href
+                    ? "text-foreground"
+                    : "text-foreground/60"
+                )}
+              >
+                <span className="text-xl">{route.icon}</span>
+                {route.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      </SheetContent>
+    </Sheet>
+  )
+}

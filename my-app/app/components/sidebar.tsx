@@ -1,43 +1,65 @@
-import React from 'react';
-import Link from 'next/link';
+"use client"
 
-const Sidebar = () => {
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+
+const routes = [
+  {
+    href: "/",
+    label: "Home",
+    icon: "🏠"
+  },
+  {
+    href: "/head-or-tail",
+    label: "Head or Tail",
+    icon: "🎯"
+  },
+  {
+    href: "/single-dice",
+    label: "Single Dice",
+    icon: "🎲"
+  },
+  {
+    href: "/double-dice",
+    label: "Double Dice",
+    icon: "🎲"
+  },
+  {
+    href: "/rock-paper",
+    label: "Rock Paper",
+    icon: "✂️"
+  },
+  {
+    href: "/rock-paper-plus",
+    label: "Rock Paper ++",
+    icon: "✂️"
+  }
+]
+
+export default function Sidebar() {
+  const pathname = usePathname()
+
   return (
-    <div className="hidden md:flex flex-col w-64 bg-gray-800 text-white h-screen fixed">
-      <div className="p-4">
-        <h2 className="text-2xl font-bold mb-6">EthenaFun</h2>
-        <nav className="space-y-4">
-          <Link href="/" className="block py-2 px-4 hover:bg-gray-700 rounded">
-            Home
+    <div className="hidden lg:block w-64 glass-effect min-h-[calc(100vh-73px)] p-4">
+      <nav className="space-y-2">
+        {routes.map((route) => (
+          <Link
+            key={route.href}
+            href={route.href}
+            className={cn(
+              "flex items-center gap-3 px-4 py-2 text-white hover:bg-white/10 rounded-lg transition-all duration-300 group",
+              pathname === route.href && "bg-white/10 gradient-text"
+            )}
+          >
+            <span className="text-xl">{route.icon}</span>
+            <span className="group-hover:gradient-text transition-all duration-300">
+              {route.label}
+            </span>
           </Link>
-          <div className="pt-4 border-t border-gray-700">
-            <h3 className="text-sm uppercase text-gray-400 mb-2">Games</h3>
-            <Link href="/single-dice" className="block py-2 px-4 hover:bg-gray-700 rounded">
-              Single Dice
-            </Link>
-            <Link href="/double-dice" className="block py-2 px-4 hover:bg-gray-700 rounded">
-              Double Dice
-            </Link>
-            <Link href="/head-or-tail" className="block py-2 px-4 hover:bg-gray-700 rounded">
-              Head or Tail
-            </Link>
-            <Link href="/rock-paper" className="block py-2 px-4 hover:bg-gray-700 rounded">
-              Rock Paper Scissors
-            </Link>
-            <Link href="/rock-paper-plus" className="block py-2 px-4 hover:bg-gray-700 rounded">
-              Rock Paper Scissors Plus
-            </Link>
-          </div>
-          <div className="pt-4 border-t border-gray-700">
-            <h3 className="text-sm uppercase text-gray-400 mb-2">Account</h3>
-            <Link href="/transactions" className="block py-2 px-4 hover:bg-gray-700 rounded">
-              Transaction History
-            </Link>
-          </div>
-        </nav>
-      </div>
+        ))}
+      </nav>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;

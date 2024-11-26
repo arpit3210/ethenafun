@@ -1,26 +1,48 @@
-import React from 'react';
+import { Facebook, Twitter, TextIcon as Telegram, Linkedin } from 'lucide-react'
+import Link from "next/link"
 
-const Footer = () => {
+export default function Footer() {
   return (
-    <footer className="bg-gray-800 text-white py-6">
-      <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="mb-4 md:mb-0">
-            <h3 className="text-xl font-bold">EthenaFun</h3>
-            <p className="text-gray-400">Play, Win, and Earn</p>
+    <footer className="glass-effect text-white py-12">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <div className="text-2xl font-bold tracking-tighter gradient-text mb-4">ETHENAFUN</div>
+            <p className="text-sm text-gray-400">
+              Copyright 2023 EthenaFun. All rights reserved.
+            </p>
           </div>
-          <div className="flex space-x-4">
-            <a href="#" className="hover:text-blue-400">Terms</a>
-            <a href="#" className="hover:text-blue-400">Privacy</a>
-            <a href="#" className="hover:text-blue-400">Contact</a>
+          
+          {[
+            { title: "PLATFORM", links: ["Support", "FAQs"] },
+            { title: "ABOUT US", links: ["Cookies Policy", "Privacy Policy"] },
+          ].map((section, index) => (
+            <div key={index}>
+              <h3 className="text-lg font-semibold mb-4 gradient-text">{section.title}</h3>
+              <ul className="space-y-2">
+                {section.links.map((link, linkIndex) => (
+                  <li key={linkIndex}>
+                    <Link href="#" className="text-zinc-400 hover:text-white transition-all duration-300">
+                      {link}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          
+          <div>
+            <h3 className="text-lg font-semibold mb-4 gradient-text">COMMUNITY BUILD</h3>
+            <div className="flex gap-4">
+              {[Facebook, Telegram, Twitter, Linkedin].map((Icon, index) => (
+                <Link key={index} href="#" className="text-zinc-400 hover:text-white transition-all duration-300 transform hover:scale-110">
+                  <Icon className="h-6 w-6" />
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="mt-4 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} EthenaFun. All rights reserved.</p>
         </div>
       </div>
     </footer>
-  );
-};
-
-export default Footer;
+  )
+}
