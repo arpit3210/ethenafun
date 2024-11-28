@@ -6,15 +6,17 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Footer from "../components/footer"
 import Sidebar from "../components/sidebar"
+import ConnectButton from "../components/ConnectButton"
+import { MobileNav } from '../components/mobile-nav'
 
 export default function RockPaper() {
   return (
     <div className="min-h-screen bg-[#13111C] text-white">
       <header className="flex items-center justify-between px-6 py-4 bg-[#1A1825]">
         <div className="text-2xl font-bold tracking-tighter">ETHENAFUN</div>
-        <Button className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium px-6">
-          CONNECT WALLET
-        </Button>
+      
+        <ConnectButton />
+
       </header>
       
       <div className="flex">

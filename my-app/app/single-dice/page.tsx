@@ -6,15 +6,18 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Footer from "../components/footer"
 import Sidebar from "../components/sidebar"
+import ConnectButton from "../components/ConnectButton"
+import { MobileNav } from '../components/mobile-nav'
 
 export default function SingleDice() {
   return (
     <div className="min-h-screen bg-[#13111C] text-white">
-      <header className="flex items-center justify-between px-6 py-4 bg-[#1A1825]">
-        <div className="text-2xl font-bold tracking-tighter">ETHENAFUN</div>
-        <Button className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-medium px-6">
-          CONNECT WALLET
-        </Button>
+      <header className="flex justify-between items-center p-4 lg:p-6 bg-[#1A1825]">
+        <div className="flex items-center gap-2">
+          <MobileNav />
+          <div className="text-2xl font-bold tracking-tighter">ETHENAFUN</div>
+        </div>
+        <ConnectButton />
       </header>
       
       <div className="flex">
@@ -87,8 +90,7 @@ export default function SingleDice() {
                   CONNECT WALLET
                 </Button>
               </div>
-              
-              <div className="flex items-center justify-center">
+　　 　 　 　 <div className="flex items-center justify-center">
                 <div className="relative w-64 h-64">
                   <div className="absolute inset-0 bg-white rounded-2xl transform rotate-12">
                     <div className="grid grid-cols-2 gap-4 p-8">
@@ -115,8 +117,7 @@ export default function SingleDice() {
                 <TabsTrigger value="all-transactions">All Transactions</TabsTrigger>
                 <TabsTrigger value="leader-board">Leader Board</TabsTrigger>
               </TabsList>
-              
-              <div className="mt-4">
+　　 　 　 　 <div className="mt-4">
                 <Table>
                   <TableHeader>
                     <TableRow>

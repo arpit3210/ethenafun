@@ -15,11 +15,11 @@ export default function RockPaperPlus() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-lg">
             <div className="flex items-center gap-2">
-              <span>0 U2U</span>
+              <span>0 ETH</span>
               <div className="w-4 h-4 rounded-full bg-[#7C3AED]" />
             </div>
             <div className="text-sm text-zinc-400">
-              U2U Chain
+              Ethena Testnet Chain
             </div>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-lg">
