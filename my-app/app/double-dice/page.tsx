@@ -1,16 +1,20 @@
 'use client'
 
-import { Volume2, Info, ChevronUp, ChevronDown } from 'lucide-react'
+import { Volume2, Info } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import Image from 'next/image'
+import { MobileNav } from '../components/mobile-nav'
+import Sidebar from '../components/sidebar'
+import ConnectButton from '../components/ConnectButton'
+import Footer from '../components/footer'
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import Footer from "../components/footer"
-import Sidebar from "../components/sidebar"
-import { MobileNav } from '../components/mobile-nav'
-
-import ConnectButton from "../components/ConnectButton"
+import { useWalletConnection } from '../hooks/useWalletConnection'
 
 export default function DoubleDice() {
+  const { account, walletConnected, connectWallet } = useWalletConnection();
+
   return (
     <div className="min-h-screen bg-[#13111C] text-white">
       <header className="flex justify-between items-center p-4 lg:p-6 bg-[#1A1825]">
@@ -20,7 +24,7 @@ export default function DoubleDice() {
         </div>
         <ConnectButton />
       </header>
-      
+
       <div className="flex">
         <Sidebar />
         <main className="flex-1 p-6">
@@ -33,32 +37,28 @@ export default function DoubleDice() {
                 <Info className="h-5 w-5" />
               </Button>
             </div>
-            
+
             <div className="grid lg:grid-cols-2 gap-8">
               <div className="space-y-8">
                 <div className="space-y-4">
-                  <h3 className="text-sm font-medium text-zinc-400">PICK CHOICE</h3>
-                  <div className="flex gap-4">
-                    <div className="flex-1 grid grid-cols-2 gap-4">
-                      <Button className="bg-[#7C3AED] hover:bg-[#6D28D9] h-12">OVER</Button>
-                      <Button variant="outline" className="border-zinc-700 hover:bg-zinc-800 h-12">UNDER</Button>
-                    </div>
-                    <div className="w-24 relative">
-                      <div className="h-12 bg-zinc-900 rounded-lg flex items-center justify-center text-xl font-bold">
-                        7
-                      </div>
-                      <div className="absolute right-2 top-1 bottom-1 flex flex-col justify-between">
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-zinc-400">
-                          <ChevronUp className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-5 w-5 text-zinc-400">
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+                  <h3 className="text-sm font-medium text-zinc-400">PICK NUMBER</h3>
+                  <div className="grid grid-cols-6 gap-2">
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map((number) => (
+                      <Button
+                        key={number}
+                        variant={number === 7 ? 'default' : 'outline'}
+                        className={`h-12 ${
+                          number === 7
+                            ? 'bg-[#7C3AED] hover:bg-[#6D28D9]'
+                            : 'border-zinc-700 hover:bg-zinc-800'
+                        }`}
+                      >
+                        {number}
+                      </Button>
+                    ))}
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400">AMOUNT</h3>
                   <div className="relative">
@@ -67,68 +67,59 @@ export default function DoubleDice() {
                       value="0.1"
                       className="w-full h-12 bg-zinc-900 rounded-lg px-4 pr-16"
                     />
-                    <Button 
+                    <Button
                       className="absolute right-1 top-1 bottom-1 px-4 bg-zinc-800 hover:bg-zinc-700"
                     >
                       MAX
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400">POTENTIAL PROFIT</h3>
                   <div className="h-12 bg-zinc-900 rounded-lg px-4 flex items-center">
-                    0.24
+                    0.20
                   </div>
                 </div>
-                
-                <Button className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12">
-                  CONNECT WALLET
-                </Button>
+
+                {walletConnected ? (
+                  <Button className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12">
+                    ROLL
+                  </Button>
+                ) : (
+                  <Button 
+                    className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12"
+                    onClick={connectWallet}
+                  >
+                    CONNECT WALLET
+                  </Button>
+                )}
               </div>
-              
-              <div className="flex items-center justify-center">
-                <div className="relative w-full h-64">
-                  <div className="absolute inset-0 flex items-center justify-center gap-8">
-                    <div className="w-32 h-32 bg-white rounded-2xl transform rotate-12 flex items-center justify-center">
-                      <div className="grid grid-cols-2 gap-4 p-4">
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                      </div>
-                    </div>
-                    <div className="w-32 h-32 bg-white rounded-2xl transform -rotate-12 flex items-center justify-center">
-                      <div className="grid grid-cols-2 gap-4 p-4">
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                        <div className="w-3 h-3 rounded-full bg-black" />
-                      </div>
-                    </div>
-                  </div>
+
+              <div className="flex items-center justify-center gap-8">
+                <div className="relative w-48 h-48">
+                  <Image src="/home_images/double.png" alt="first dice" fill />
+                </div>
+                <div className="relative w-48 h-48">
+                  <Image src="/home_images/double.png" alt="second dice" fill />
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="mt-8">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-6 h-6 bg-[#7C3AED]" />
               <h2 className="text-2xl font-bold">HISTORY</h2>
             </div>
-            
+
             <Tabs defaultValue="my-transactions">
               <TabsList className="bg-zinc-900">
                 <TabsTrigger value="my-transactions">My Transactions</TabsTrigger>
                 <TabsTrigger value="all-transactions">All Transactions</TabsTrigger>
                 <TabsTrigger value="leader-board">Leader Board</TabsTrigger>
               </TabsList>
-              
+
               <div className="mt-4">
                 <Table>
                   <TableHeader>
@@ -144,7 +135,7 @@ export default function DoubleDice() {
                     <TableRow>
                       <TableCell>00:00</TableCell>
                       <TableCell>0.00</TableCell>
-                      <TableCell>OVER 7</TableCell>
+                      <TableCell>7</TableCell>
                       <TableCell>-</TableCell>
                       <TableCell>0x123...abc</TableCell>
                     </TableRow>
@@ -155,7 +146,7 @@ export default function DoubleDice() {
           </div>
         </main>
       </div>
-      
+
       <Footer />
     </div>
   )
