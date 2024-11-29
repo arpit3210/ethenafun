@@ -7,9 +7,12 @@ async function main() {
 
         // Get all deployed game contracts from deploy.js history
         const gameAddresses = [
-            "0x7D1A99766f38e09ccE1936EC22eE3B6C55d8902c",  // Latest deployment
+            "0xaB8B61dc2afC24100b0fF999857023690c1D4114",  // Latest deployment
+            "0xc985E38bdc6882FC1bD6872D4DD52aEbBee664d0",  // Previous deployment
+            "0xE2380f37B9498ca87c47D8B64dA928c8098716fD",  // Previous deployment
+            "0x7D1A99766f38e09ccE1936EC22eE3B6C55d8902c",  // Previous deployment
             "0xf6d43694D413Fd65Ec1fbC144a3e331B76671c72",  // Previous deployment
-            "0x7Ed53358127b0a863761fb40E2f52016C3c89526"   // Older deployment
+            "0x7Ed53358127b0a863761fb40E2f52016C3c89526"   // Oldest deployment
         ];
 
         const tokenAddress = "0x426E7d03f9803Dd11cb8616C65b99a3c0AfeA6dE";
