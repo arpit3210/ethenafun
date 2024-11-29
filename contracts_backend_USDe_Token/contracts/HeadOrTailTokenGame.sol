@@ -232,4 +232,8 @@ contract HeadOrTailTokenGame is Ownable {
     function getTotalTail() public view returns (uint256) {
         return totalTail;
     }
+
+    function getVRFCoordinator() public view returns (address) {
+        return address(i_vrfCoordinator);
+    }
 }

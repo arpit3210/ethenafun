@@ -180,10 +180,6 @@ export class GameInteraction {
             throw new Error('No signer available');
         }
         try {
-            // First approve the bet amount
-            await this.tokenContract.approve(this.gameContract.target, betAmount);
-            
-            // Then make the play
             const tx = await this.gameContract.play(choice);
             return tx;
         } catch (error) {
@@ -259,33 +255,34 @@ export class GameInteraction {
 
     async waitForGameResult(tx: ethers.ContractTransactionResponse): Promise<GameResult> {
         try {
+            // Wait for the transaction to be mined
             const receipt = await tx.wait();
             if (!receipt) {
                 throw new Error('Transaction receipt not found');
             }
 
-            // Find the GamePlayed event in the logs
-            const iface = new ethers.Interface(GAME_CONTRACT_ABI);
-            const gamePlayedEvent = iface.getEvent('GamePlayed');
-            
-            if (!gamePlayedEvent) {
-                throw new Error('GamePlayed event not found in contract ABI');
-            }
-            
-            const eventTopic = gamePlayedEvent.topicHash;
-            
-            const gamePlayedLog = receipt.logs.find(
-                log => log.topics[0] === eventTopic
-            );
+            // Find the GameResult event
+            const gameResultLog = receipt.logs.find(log => {
+                try {
+                    return log.topics[0] === ethers.id(
+                        "GameResult(address,uint256,uint256,bool,uint256,uint256,bool,bool)"
+                    );
+                } catch {
+                    return false;
+                }
+            });
 
-            if (!gamePlayedLog) {
-                throw new Error('Game result event not found');
+            if (!gameResultLog) {
+                throw new Error('GameResult event not found');
             }
+
+            // Create interface for parsing logs
+            const iface = new ethers.Interface(GAME_CONTRACT_ABI);
 
             // Parse the event log
             const parsedLog = iface.parseLog({
-                topics: gamePlayedLog.topics,
-                data: gamePlayedLog.data
+                topics: gameResultLog.topics,
+                data: gameResultLog.data
             });
 
             if (!parsedLog || !parsedLog.args) {
@@ -293,20 +290,11 @@ export class GameInteraction {
             }
 
             // Extract values from the parsed log
-            const [player, choice, betAmount, won, amountWon, bonus] = [
-                parsedLog.args[0],
-                parsedLog.args[1],
-                parsedLog.args[2],
-                parsedLog.args[3],
-                parsedLog.args[4],
-                parsedLog.args[5]
-            ];
-
             return {
-                isWin: won,
-                betAmount: ethers.formatUnits(betAmount, 18),
-                amountWon: ethers.formatUnits(amountWon, 18),
-                bonus: bonus || false
+                isWin: parsedLog.args[3], // isWinner is the 4th parameter
+                betAmount: ethers.formatUnits(parsedLog.args[4], 18), // betAmount is the 5th parameter
+                amountWon: ethers.formatUnits(parsedLog.args[5], 18), // amountWon is the 6th parameter
+                bonus: parsedLog.args[6] // bonus is the 7th parameter
             };
         } catch (error) {
             console.error('Error waiting for game result:', error);

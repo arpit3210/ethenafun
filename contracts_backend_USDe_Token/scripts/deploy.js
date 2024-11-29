@@ -9,7 +9,7 @@ async function main() {
     console.log("Using existing token at:", tokenAddress);
 
     // Deploy VRF Coordinator
-    const VRFCoordinator = await ethers.getContractFactory("MockVRFCoordinatorV2");
+    const VRFCoordinator = await ethers.getContractFactory("MockVRFCoordinatorV2Simple");
     const coordinator = await VRFCoordinator.deploy();
     await coordinator.waitForDeployment();
     console.log("MockVRFCoordinator deployed to:", coordinator.target);
