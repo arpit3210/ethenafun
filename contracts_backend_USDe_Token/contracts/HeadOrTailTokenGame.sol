@@ -61,11 +61,11 @@ contract HeadOrTailTokenGame is Ownable {
         gameToken = IERC20(_gameTokenAddress);
 
         allowedBetAmounts = [
-            1 * 10**18,    // 1 tokens
-            2 * 10**18,    // 2 tokens
-            3 * 10**18,    // 3 tokens
-            4 * 10**18,    // 4 tokens
-            5 * 10**18     // 5 tokens
+            0.1 * 10**18,    // 0.1 tokens
+            0.2 * 10**18,    // 0.2 tokens
+            0.3 * 10**18,    // 0.3 tokens
+            0.4 * 10**18,    // 0.4 tokens
+            0.5 * 10**18     // 0.5 tokens
         ];
     }
 

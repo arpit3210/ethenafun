@@ -29,26 +29,16 @@ async function main() {
         console.log("\n2. Token Information:");
         console.log("Owner token balance:", ethers.formatEther(ownerBalance));
 
-        // Approve tokens for contract if needed
-        const approveAmount = ethers.parseEther("200"); // Approve more than needed for all operations
+        // Approve tokens for game contract
+        const approvalAmount = ethers.parseEther("0.1"); 
         console.log("\nApproving tokens for game contract");
-        const approveTx = await gameToken.approve(GAME_ADDRESS, approveAmount);
+        const approveTx = await gameToken.approve(GAME_ADDRESS, approvalAmount);
         await approveTx.wait();
-        console.log("Approved amount:", ethers.formatEther(await gameToken.allowance(await owner.getAddress(), GAME_ADDRESS)));
-
-        // Top up contract balance if needed
-        const contractBalance = await game.getBalance();
-        if (contractBalance < ethers.parseEther("100")) {
-            const topUpAmount = ethers.parseEther("100");
-            console.log("\nTopping up contract with", ethers.formatEther(topUpAmount), "tokens");
-            const topUpTx = await game.topUpBalance(topUpAmount);
-            await topUpTx.wait();
-            console.log("Contract token balance:", ethers.formatEther(await game.getBalance()));
-        }
+        console.log("Approved amount:", ethers.formatEther(approvalAmount));
 
         console.log("\n3. Testing Game Functions:");
         // Place a bet
-        const betAmount = ethers.parseEther("1");
+        const betAmount = ethers.parseEther("0.1");
         console.log("Placing a bet of", ethers.formatEther(betAmount), "tokens on HEAD");
         const playTx = await game.play(true);
         const receipt = await playTx.wait();
