@@ -180,7 +180,11 @@ export class GameInteraction {
             throw new Error('No signer available');
         }
         try {
-            const tx = await this.gameContract.play(choice, betAmount);
+            // First approve the bet amount
+            await this.tokenContract.approve(this.gameContract.target, betAmount);
+            
+            // Then make the play
+            const tx = await this.gameContract.play(choice);
             return tx;
         } catch (error) {
             console.error('Error playing game:', error);
