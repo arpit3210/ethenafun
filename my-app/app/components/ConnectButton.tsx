@@ -6,8 +6,10 @@ import { Copy, ExternalLink, Power } from 'lucide-react';
 import { truncateAddress } from '../utils/format';
 import { ethers } from 'ethers';
 import { USD_TOKEN_ABI } from '../constants/usdTokenAbi';
+import dynamic from 'next/dynamic';
 
 const ConnectButton = () => {
+  const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState<string | null>(null);
   const [balance, setBalance] = useState<string>('0');
   const [chainId, setChainId] = useState<number | null>(null);
@@ -16,6 +18,7 @@ const ConnectButton = () => {
   const USD_TOKEN_ADDRESS = '0x426E7d03f9803Dd11cb8616C65b99a3c0AfeA6dE';
 
   useEffect(() => {
+    setMounted(true);
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
@@ -25,8 +28,10 @@ const ConnectButton = () => {
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
+
     const checkConnection = async () => {
-      if (typeof window.ethereum !== 'undefined') {
+      if (typeof window !== 'undefined' && window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts.length > 0) {
@@ -39,18 +44,18 @@ const ConnectButton = () => {
     };
 
     checkConnection();
-    if (typeof window.ethereum !== 'undefined') {
+    if (typeof window !== 'undefined' && window.ethereum) {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
     }
 
     return () => {
-      if (typeof window.ethereum !== 'undefined') {
+      if (typeof window !== 'undefined' && window.ethereum) {
         window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
     };
-  }, []);
+  }, [mounted]);
 
   const handleAccountsChanged = async (accounts: string[]) => {
     if (accounts.length === 0) {
@@ -72,7 +77,7 @@ const ConnectButton = () => {
 
   const getBalance = async (address: string) => {
     try {
-      if (typeof window.ethereum !== 'undefined') {
+      if (typeof window !== 'undefined' && window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const tokenContract = new ethers.Contract(USD_TOKEN_ADDRESS, USD_TOKEN_ABI, signer);
@@ -89,7 +94,7 @@ const ConnectButton = () => {
 
   const updateChainId = async () => {
     try {
-      if (typeof window.ethereum !== 'undefined') {
+      if (typeof window !== 'undefined' && window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
         setChainId(Number(network.chainId));
@@ -100,7 +105,7 @@ const ConnectButton = () => {
   };
 
   const connectWallet = async () => {
-    if (typeof window.ethereum !== 'undefined') {
+    if (typeof window !== 'undefined' && window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         handleAccountsChanged(accounts);
@@ -113,24 +118,32 @@ const ConnectButton = () => {
   };
 
   const disconnectWallet = () => {
+    console.log('Disconnecting wallet...');
     setAccount(null);
     setBalance('0');
     setChainId(null);
   };
 
-  const copyAddress = () => {
+  const copyAddress = async () => {
     if (account) {
-      navigator.clipboard.writeText(account);
+      try {
+        await navigator.clipboard.writeText(account);
+        alert('Address copied to clipboard!');
+      } catch (err) {
+        console.error('Failed to copy address:', err);
+      }
     }
   };
 
   const openExplorer = () => {
     if (account) {
-      // Replace with your network's explorer URL
-      const explorerUrl = `https://testnet.explorer.ethena.fi//address/${account}`;
+      const explorerUrl = `https://testnet.explorer.ethena.fi/address/${account}`;
       window.open(explorerUrl, '_blank');
     }
   };
+
+  // Don't render anything until mounted to prevent hydration errors
+  if (!mounted) return null;
 
   if (!account) {
     return (
@@ -150,31 +163,45 @@ const ConnectButton = () => {
           <span>{parseFloat(balance).toFixed(2)} USD</span>
           <div className="w-4 h-4 rounded-full bg-[#7C3AED]" />
         </div>
-        <div className="text-sm text-zinc-400 hidden lg:block">
-          {chainId === 52085143 ? 'Ethena Network Testnet' : 'Unknown Network'}
+        <div className="text-sm text-zinc-400">
+          Ethena Testnet Chain
         </div>
       </div>
       
-      <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-lg">
-        <span className="text-sm">{truncateAddress(account)}</span>
-        <button onClick={copyAddress} className="hover:text-purple-500">
-          <Copy className="w-4 h-4" />
-        </button>
-        <button onClick={openExplorer} className="hover:text-purple-500">
-          <ExternalLink className="w-4 h-4" />
-        </button>
+      <div className="flex items-center gap-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 rounded-lg hover:bg-zinc-800"
+          onClick={copyAddress}
+        >
+          <span className="text-sm">{truncateAddress(account)}</span>
+          <Copy className="w-4 h-4 cursor-pointer" />
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-zinc-800"
+          onClick={openExplorer}
+        >
+          <ExternalLink className="w-4 h-4 cursor-pointer" />
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hover:bg-zinc-800"
+          onClick={disconnectWallet}
+        >
+          <Power className="w-5 h-5 cursor-pointer" />
+        </Button>
       </div>
-
-      <Button 
-        variant="ghost" 
-        size="icon"
-        onClick={disconnectWallet}
-        className="hover:text-red-500"
-      >
-        <Power className="w-5 h-5" />
-      </Button>
     </div>
   );
 };
 
-export default ConnectButton;
+// Export as a dynamic component with SSR disabled
+export default dynamic(() => Promise.resolve(ConnectButton), {
+  ssr: false
+});
