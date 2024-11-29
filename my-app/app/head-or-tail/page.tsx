@@ -11,9 +11,40 @@ import Footer from '../components/footer'
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useWalletConnection } from '../hooks/useWalletConnection'
+import { useHeadOrTailGame } from '../hooks/useHeadOrTailGame'
+import { useState, useEffect } from 'react'
+import { cn } from '@/lib/utils'
+import ResultModal from '../components/ResultModal';
 
 export default function HeadOrTail() {
   const { account, walletConnected, connectWallet } = useWalletConnection();
+  const {
+    selectedSide,
+    amount,
+    potentialProfit,
+    isFlipping,
+    gameHistory,
+    balance,
+    handleSelectSide,
+    handleAmountChange,
+    handleMaxAmount,
+    placeBet,
+    showResult,
+    gameResult,
+    closeResultModal
+  } = useHeadOrTailGame();
+
+  const [isRotating, setIsRotating] = useState(false);
+
+  useEffect(() => {
+    if (isFlipping) {
+      setIsRotating(true);
+      const timer = setTimeout(() => {
+        setIsRotating(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isFlipping]);
 
   return (
     <div className="min-h-screen bg-[#13111C] text-white">
@@ -43,8 +74,28 @@ export default function HeadOrTail() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400">PICK NUMBER</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button className="bg-[#7C3AED] hover:bg-[#6D28D9] h-12">HEAD</Button>
-                    <Button variant="outline" className="border-zinc-700 hover:bg-zinc-800 h-12">TAIL</Button>
+                    <Button 
+                      className={cn(
+                        "h-12",
+                        selectedSide === 'HEAD' 
+                          ? "bg-[#7C3AED] hover:bg-[#6D28D9]" 
+                          : "border-zinc-700 hover:bg-zinc-800"
+                      )}
+                      onClick={() => handleSelectSide('HEAD')}
+                    >
+                      HEAD
+                    </Button>
+                    <Button 
+                      className={cn(
+                        "h-12",
+                        selectedSide === 'TAIL' 
+                          ? "bg-[#7C3AED] hover:bg-[#6D28D9]" 
+                          : "border-zinc-700 hover:bg-zinc-800"
+                      )}
+                      onClick={() => handleSelectSide('TAIL')}
+                    >
+                      TAIL
+                    </Button>
                   </div>
                 </div>
 
@@ -53,11 +104,13 @@ export default function HeadOrTail() {
                   <div className="relative">
                     <input
                       type="text"
-                      value="0.1"
+                      value={amount}
+                      onChange={(e) => handleAmountChange(e.target.value)}
                       className="w-full h-12 bg-zinc-900 rounded-lg px-4 pr-16"
                     />
                     <Button
                       className="absolute right-1 top-1 bottom-1 px-4 bg-zinc-800 hover:bg-zinc-700"
+                      onClick={handleMaxAmount}
                     >
                       MAX
                     </Button>
@@ -67,13 +120,17 @@ export default function HeadOrTail() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400">POTENTIAL PROFIT</h3>
                   <div className="h-12 bg-zinc-900 rounded-lg px-4 flex items-center">
-                    0.20
+                    {potentialProfit}
                   </div>
                 </div>
 
                 {walletConnected ? (
-                  <Button className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12">
-                    FLIP
+                  <Button 
+                    className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12"
+                    onClick={placeBet}
+                    disabled={!selectedSide || !amount || isFlipping}
+                  >
+                    {isFlipping ? 'FLIPPING...' : 'FLIP'}
                   </Button>
                 ) : (
                   <Button 
@@ -86,16 +143,19 @@ export default function HeadOrTail() {
               </div>
 
               <div className="flex items-center justify-center">
-                <div className="relative w-64 h-64">
-                  {/* <div className="absolute inset-0 rounded-full bg-yellow-100" /> */}
-                  <Image src="/home_images/head-or-tail.png" alt="coin" fill />
-
-
-                  <Image src="/home_images/head.png" alt="coin" fill />
-
-                  <Image src="/home_images/tail.png" alt="coin" fill />
-
-
+                <div className={cn(
+                  "relative w-64 h-64 transition-transform duration-1000",
+                  isRotating && "animate-spin"
+                )}>
+                  {selectedSide === null && (
+                    <Image src="/home_images/head-or-tail.png" alt="coin" fill />
+                  )}
+                  {selectedSide === 'HEAD' && (
+                    <Image src="/home_images/head.png" alt="head" fill />
+                  )}
+                  {selectedSide === 'TAIL' && (
+                    <Image src="/home_images/tail.png" alt="tail" fill />
+                  )}
                 </div>
               </div>
             </div>
@@ -126,13 +186,15 @@ export default function HeadOrTail() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell>00:00</TableCell>
-                      <TableCell>0.00</TableCell>
-                      <TableCell>HEAD</TableCell>
-                      <TableCell>-</TableCell>
-                      <TableCell>0x123...abc</TableCell>
-                    </TableRow>
+                    {gameHistory.map((game, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{new Date(game.timestamp * 1000).toLocaleTimeString()}</TableCell>
+                        <TableCell>{game.profit}</TableCell>
+                        <TableCell>{game.picked ? 'HEAD' : 'TAIL'}</TableCell>
+                        <TableCell>{game.result ? 'WIN' : 'LOSE'}</TableCell>
+                        <TableCell>{`${game.txHash.slice(0, 6)}...${game.txHash.slice(-4)}`}</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
@@ -140,6 +202,12 @@ export default function HeadOrTail() {
           </div>
         </main>
       </div>
+
+      <ResultModal
+        isOpen={showResult}
+        onClose={closeResultModal}
+        result={gameResult}
+      />
 
       <Footer />
     </div>

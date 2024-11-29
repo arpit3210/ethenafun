@@ -1,13 +1,18 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { Web3Provider } from './context/Web3Context'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+}
 
 export const metadata: Metadata = {
   title: 'EthenaFun - Web3 Gaming Platform',
   description: 'Play and earn on the Ethena network',
-  viewport: 'width=device-width, initial-scale=1',
   formatDetection: {
     telephone: false,
     date: false,
@@ -28,7 +33,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-800 relative overflow-hidden">
-          {children}
+          <Web3Provider>
+            {children}
+          </Web3Provider>
         </div>
       </body>
     </html>
