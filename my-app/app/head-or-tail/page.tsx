@@ -188,11 +188,16 @@ export default function HeadOrTail() {
                   <TableBody>
                     {gameHistory.map((game, index) => (
                       <TableRow key={index}>
-                        <TableCell>{new Date(game.timestamp * 1000).toLocaleTimeString()}</TableCell>
-                        <TableCell>{game.profit}</TableCell>
+                        <TableCell>{game.timestamp ? new Date(Number(game.timestamp) * 1000).toLocaleTimeString() : '-'}</TableCell>
+                        <TableCell>{game.amountWon ? (Number(game.amountWon) / 1e18).toFixed(2) : '-'}</TableCell>
                         <TableCell>{game.picked ? 'HEAD' : 'TAIL'}</TableCell>
-                        <TableCell>{game.result ? 'WIN' : 'LOSE'}</TableCell>
-                        <TableCell>{`${game.txHash.slice(0, 6)}...${game.txHash.slice(-4)}`}</TableCell>
+                        <TableCell>{game.isWinner ? 'WIN' : 'LOSE'}</TableCell>
+                        <TableCell>
+                          {game.txHash && game.txHash !== '-'
+                            ? `${game.txHash.slice(0, 6)}...${game.txHash.slice(-4)}`
+                            : '-'
+                          }
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

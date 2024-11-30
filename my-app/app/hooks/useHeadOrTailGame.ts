@@ -39,7 +39,7 @@ export const useHeadOrTailGame = () => {
   const fetchGameHistory = useCallback(async () => {
     if (!gameInteraction || !account) return;
     try {
-      const history = await gameInteraction.getPlayerHistory();
+      const history = await gameInteraction.getPlayerHistory(account);
       setGameHistory(history);
       setError(null);
     } catch (error) {
@@ -107,17 +107,20 @@ export const useHeadOrTailGame = () => {
       // Format amount for contract
       const formattedAmount = formatNumberForContract(amount);
       
-      // Check allowance
+      // Check allowance and approve if needed
       const currentAllowance = await gameInteraction.checkAllowance();
-      if (currentAllowance < BigInt(formattedAmount)) {
-        await gameInteraction.approveTokenSpending(formattedAmount);
-      }
+      // if (currentAllowance < BigInt(formattedAmount)) {
+      //   console.log('Approving token spending...');
+      //   await gameInteraction.approveTokenSpending(formattedAmount);
+      //   console.log('Token spending approved');
+      // } else {
+      //   console.log('Sufficient allowance exists');
+      // }
       
-      // Place bet
-      const tx = await gameInteraction.play(selectedSide === 'HEAD', BigInt(formattedAmount));
-      
-      // Wait for result
-      const result = await gameInteraction.waitForGameResult(tx);
+      // Place bet and wait for result
+      console.log('Placing bet...');
+      const result = await gameInteraction.play(selectedSide === 'HEAD', BigInt(formattedAmount));
+      console.log('Game result received:', result);
       
       // Update game result
       setGameResult({

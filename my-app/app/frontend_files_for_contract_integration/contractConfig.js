@@ -1,12 +1,12 @@
 import { ethers } from 'ethers';
 
 // Contract Addresses
-export const GAME_CONTRACT_ADDRESS = "0x7D1A99766f38e09ccE1936EC22eE3B6C55d8902c";
+export const GAME_CONTRACT_ADDRESS = "0xaB8B61dc2afC24100b0fF999857023690c1D4114";
 export const TOKEN_CONTRACT_ADDRESS = "0x426E7d03f9803Dd11cb8616C65b99a3c0AfeA6dE";
-export const VRF_COORDINATOR = "0x170fabBC54Dd3A056f4c0eB2ceA035BE74F5e0D7";
+export const VRF_COORDINATOR = "0x9b55C20577A00e8B6E665D29EFf28CC66B4a2aBC";
 
 // Contract ABIs
-export const GAME_CONTRACT_ABI =  [
+export const GAME_CONTRACT_ABI = [
     {
       "inputs": [
         {
@@ -251,6 +251,19 @@ export const GAME_CONTRACT_ABI =  [
           "internalType": "uint256",
           "name": "",
           "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getVRFCoordinator",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
         }
       ],
       "stateMutability": "view",
