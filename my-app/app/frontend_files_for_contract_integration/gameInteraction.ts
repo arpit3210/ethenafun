@@ -9,6 +9,19 @@ interface GameResult {
     isHead: boolean;
     requestId: string;
     gameId: string;
+    transactionDetails?: {
+        transactionHash: string;
+        from: string;
+        to: string;
+        tokenTransfer?: {
+            from: string;
+            to: string;
+            amount: string;
+        };
+        status: boolean;
+        blockNumber: number;
+        timestamp: number;
+    };
 }
 
 export class GameInteraction {
@@ -271,85 +284,173 @@ export class GameInteraction {
         }
     }
 
-    private calculateWinAmount(betAmount: bigint, isBonus: boolean): bigint {
-        // Normal win: 1.7x, Bonus win: 2.2x
-        const multiplier = isBonus ? 220n : 170n;
-        return (betAmount * multiplier) / 100n;
+    private async analyzeTransactionReceipt(
+        receipt: ethers.ContractTransactionReceipt | ethers.TransactionReceipt | null
+    ): Promise<{
+        transactionHash: string;
+        from: string;
+        to: string;
+        tokenTransfer?: {
+            from: string;
+            to: string;
+            amount: string;
+        };
+        status: boolean;
+        blockNumber: number;
+        timestamp: number;
+    }> {
+        // Add explicit null check
+        if (!receipt) {
+            throw new Error('Transaction receipt is null or undefined');
+        }
+
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Ensure we have a valid receipt
+                if (!receipt) {
+                    throw new Error('No transaction receipt provided');
+                }
+
+                // Get block information
+                const block = await this.provider.getBlock(receipt.blockNumber);
+                if (!block) {
+                    throw new Error(`Could not retrieve block ${receipt.blockNumber}`);
+                }
+
+                // Prepare transaction details
+                const transactionDetails = {
+                    transactionHash: receipt.hash,
+                    from: receipt.from,
+                    to: receipt.to ?? '',
+                    status: receipt.status === 1,
+                    blockNumber: receipt.blockNumber,
+                    timestamp: block.timestamp,
+                    tokenTransfer: undefined
+                };
+
+                resolve(transactionDetails);
+            } catch (error) {
+                console.error('Error analyzing transaction receipt:', error);
+                reject(error);
+            }
+        });
     }
 
-    async checkAllowance(): Promise<bigint> {
-        if (!this.signer) {
-            throw new Error('No signer available');
-        }
-        try {
-            const address = await this.signer.getAddress();
-            const allowance = await this.tokenContract.allowance(address, GAME_CONTRACT_ADDRESS);
-            return allowance;
-        } catch (error) {
-            console.error('Error checking allowance:', error);
-            throw error;
-        }
-    }
+    private async pollForGameResult(requestId: string, maxAttempts: number = 30): Promise<GameResult> {
+        console.log(`Starting to poll for game result. Request ID: ${requestId}`);
+        let attempts = 0;
+        
+        while (attempts < maxAttempts) {
+            try {
+                // Query past events
+                const filter = this.gameContract.filters.GameResult(null, requestId);
+                const events = await this.gameContract.queryFilter(filter, -10000); // Look back 10000 blocks
 
-    // async approveTokenSpending(amount: string): Promise<void> {
-    //     if (!this.signer) {
-    //         throw new Error('No signer available');
-    //     }
-    //     try {
-    //         const tx = await this.tokenContract.approve(GAME_CONTRACT_ADDRESS, amount);
-    //         await tx.wait();
-    //     } catch (error) {
-    //         console.error('Error approving token spending:', error);
-    //         throw error;
-    //     }
-    // }
+                if (events.length > 0) {
+                    const event = events[0];
+                    
+                    // Type guard to check if event has args
+                    const isEventLog = (event: any): event is { args: any } => {
+                        return event && typeof event === 'object' && 'args' in event;
+                    };
 
-    async getPlayerHistory(playerAddress: string): Promise<GameResult[]> {
-        try {
-            // Create filter for GameResult events
-            const filter = this.gameContract.filters.GameResult(playerAddress);
-            
-            // Get all events
-            const events = await this.gameContract.queryFilter(filter);
-            
-            // Map events to GameResult interface
-            return events.map(event => {
-                // Cast the event to access args
-                const parsedEvent = event as ethers.EventLog;
-                if (!parsedEvent.args) {
-                    throw new Error('Event args not found');
+                    if (!isEventLog(event)) {
+                        throw new Error('Invalid event log type');
+                    }
+
+                    const { player, gameId, isWinner, betAmount, amountWon, bonus, isHead } = event.args;
+                    
+                    // Get transaction details
+                    const txReceipt = await event.getTransactionReceipt();
+                    const txDetails = await this.analyzeTransactionReceipt(txReceipt);
+                    
+                    console.log('Game result found:', {
+                        player,
+                        requestId,
+                        gameId: gameId.toString(),
+                        isWinner,
+                        betAmount: betAmount.toString(),
+                        amountWon: amountWon.toString(),
+                        bonus,
+                        isHead
+                    });
+
+                    return {
+                        isWin: isWinner,
+                        betAmount: ethers.formatUnits(betAmount, 18),
+                        amountWon: isWinner ? ethers.formatUnits(amountWon, 18) : '0',
+                        bonus: bonus,
+                        isHead: isHead,
+                        requestId: requestId,
+                        gameId: gameId.toString(),
+                        transactionDetails: txDetails
+                    };
+                }
+
+                // Increment attempts and wait before next poll
+                attempts++;
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds between attempts
+            } catch (error) {
+                console.error(`Error polling for game result (Attempt ${attempts + 1}):`, error);
+                attempts++;
+                
+                if (attempts >= maxAttempts) {
+                    throw new Error(`Failed to find game result after ${maxAttempts} attempts`);
                 }
                 
-                const { player, requestId, gameId, isWinner, betAmount, amountWon, bonus, isHead } = parsedEvent.args;
-                return {
-                    isWin: isWinner,
-                    betAmount: ethers.formatUnits(betAmount, 18),
-                    amountWon: isWinner ? ethers.formatUnits(amountWon, 18) : '0',
-                    bonus: bonus,
-                    isHead: isHead,
-                    requestId: requestId,
-                    gameId: gameId.toString()
-                };
-            });
-        } catch (error) {
-            console.error('Error retrieving player history:', error);
-            throw error;
+                await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds between attempts
+            }
         }
+
+        throw new Error(`Failed to find game result for request ID ${requestId} after ${maxAttempts} attempts`);
     }
 
-    async approveBet(betAmount: bigint): Promise<ethers.ContractTransactionResponse> {
-        if (!this.signer) {
-            throw new Error('Signer is not available');
-        }
-
+    async waitForGameResult(tx: ethers.ContractTransactionResponse): Promise<GameResult> {
         try {
-            console.log('Approving bet amount:', betAmount.toString());
-            const tx = await this.tokenContract.approve(this.gameContract.target, betAmount);
-            console.log('Approval transaction sent:', tx.hash);
-            await tx.wait();
-            return tx;
+            console.log('Transaction sent:', tx.hash);
+            const receipt = await tx.wait();
+            
+            // Add null check before analyzing the receipt
+            if (!receipt) {
+                throw new Error('Transaction receipt is null');
+            }
+
+            console.log('Transaction confirmed:', receipt);
+
+            // Analyze initial transaction
+            const txDetails = await this.analyzeTransactionReceipt(receipt);
+            console.log('Transaction details:', txDetails);
+
+            // Find RequestedRandomNumber event
+            const requestEvent = receipt.logs.find(
+                (log: any) => {
+                    try {
+                        const parsedLog = this.gameContract.interface.parseLog(log as any);
+                        return parsedLog?.name === 'RequestedRandomNumber';
+                    } catch {
+                        return false;
+                    }
+                }
+            );
+
+            if (!requestEvent) {
+                throw new Error('RequestedRandomNumber event not found');
+            }
+
+            // Add null check and type assertion
+            const parsedRequestEvent = this.gameContract.interface.parseLog(requestEvent as any);
+            if (!parsedRequestEvent || !parsedRequestEvent.args) {
+                throw new Error('Unable to parse RequestedRandomNumber event');
+            }
+
+            const requestId = parsedRequestEvent.args.requestId;
+            console.log('Random number requested with ID:', requestId);
+
+            // Use polling to get game result
+            return await this.pollForGameResult(requestId);
+
         } catch (error) {
-            console.error('Error approving bet:', error);
+            console.error('Error in waitForGameResult:', error);
             throw error;
         }
     }
@@ -471,7 +572,67 @@ export class GameInteraction {
         }
     }
 
-    async waitForGameResult(tx: ethers.ContractTransactionResponse): Promise<GameResult> {
-        throw new Error('This method is deprecated. Use play() instead which includes waiting for result.');
+    async checkAllowance(): Promise<bigint> {
+        if (!this.signer) {
+            throw new Error('No signer available');
+        }
+        try {
+            const address = await this.signer.getAddress();
+            const allowance = await this.tokenContract.allowance(address, GAME_CONTRACT_ADDRESS);
+            return allowance;
+        } catch (error) {
+            console.error('Error checking allowance:', error);
+            throw error;
+        }
+    }
+
+    async approveBet(betAmount: bigint): Promise<ethers.ContractTransactionResponse> {
+        if (!this.signer) {
+            throw new Error('Signer is not available');
+        }
+
+        try {
+            console.log('Approving bet amount:', betAmount.toString());
+            const tx = await this.tokenContract.approve(this.gameContract.target, betAmount);
+            console.log('Approval transaction sent:', tx.hash);
+            await tx.wait();
+            return tx;
+        } catch (error) {
+            console.error('Error approving bet:', error);
+            throw error;
+        }
+    }
+
+    async getPlayerHistory(playerAddress: string): Promise<GameResult[]> {
+        try {
+            // Create filter for GameResult events
+            const filter = this.gameContract.filters.GameResult(playerAddress);
+            
+            // Get all events
+            const events = await this.gameContract.queryFilter(filter);
+            
+            // Map events to GameResult interface
+            return events.map(event => {
+                // Cast the event to access args
+                const parsedEvent = event as ethers.EventLog;
+                if (!parsedEvent.args) {
+                    throw new Error('Event args not found');
+                }
+                
+                const { player, requestId, gameId, isWinner, betAmount, amountWon, bonus, isHead } = parsedEvent.args;
+                return {
+                    isWin: isWinner,
+                    betAmount: ethers.formatUnits(betAmount, 18),
+                    amountWon: isWinner ? ethers.formatUnits(amountWon, 18) : '0',
+                    bonus: bonus,
+                    isHead: isHead,
+                    requestId: requestId,
+                    gameId: gameId.toString()
+                };
+            });
+        } catch (error) {
+            console.error('Error retrieving player history:', error);
+            throw error;
+        }
     }
 }
