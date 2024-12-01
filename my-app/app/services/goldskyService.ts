@@ -1,9 +1,10 @@
-import { createClient } from '@goldskycom/client';
+import { createClient, fetchExchange } from 'urql';
 
 const GOLDSKY_API_KEY = process.env.NEXT_PUBLIC_GOLDSKY_API_KEY || '';
 
 const client = createClient({
   url: `https://api.goldsky.com/${GOLDSKY_API_KEY}/graphql`,
+  exchanges: [fetchExchange]
 });
 
 export interface GameStats {
@@ -43,8 +44,10 @@ export const goldskyService = {
           totalLosses
           totalBetAmount
           totalWinAmount
+          winRate
           games {
             id
+            player
             requestId
             gameId
             isHead
@@ -61,14 +64,10 @@ export const goldskyService = {
     `;
 
     try {
-      const response = await client.query({
-        query,
-        variables: { address: address.toLowerCase() }
-      });
+      const { data } = await client.query(query, { address: address.toLowerCase() }).toPromise();
+      if (!data?.player) return null;
 
-      if (!response.data?.player) return null;
-
-      const player = response.data.player;
+      const player = data.player;
       return {
         ...player,
         winRate: player.totalGames > 0 ? (player.totalWins / player.totalGames) * 100 : 0
@@ -82,11 +81,7 @@ export const goldskyService = {
   async getRecentGames(limit: number = 10): Promise<GameStats[]> {
     const query = `
       query GetRecentGames($limit: Int!) {
-        games(
-          first: $limit,
-          orderBy: timestamp,
-          orderDirection: desc
-        ) {
+        games(first: $limit, orderBy: timestamp, orderDirection: desc) {
           id
           player
           requestId
@@ -104,23 +99,15 @@ export const goldskyService = {
     `;
 
     try {
-      const response = await client.query({
-        query,
-        variables: { limit }
-      });
-
-      return response.data?.games || [];
+      const { data } = await client.query(query, { limit }).toPromise();
+      return data?.games || [];
     } catch (error) {
       console.error('Error fetching recent games:', error);
       return [];
     }
   },
 
-  async getGameStats(): Promise<{
-    totalGames: number;
-    totalWinAmount: string;
-    totalBetAmount: string;
-  }> {
+  async getGameStats(): Promise<{ totalGames: number; totalWinAmount: string; totalBetAmount: string }> {
     const query = `
       query GetGameStats {
         gameStats {
@@ -132,8 +119,8 @@ export const goldskyService = {
     `;
 
     try {
-      const response = await client.query({ query });
-      return response.data?.gameStats || {
+      const { data } = await client.query(query, {}).toPromise();
+      return data?.gameStats || {
         totalGames: 0,
         totalWinAmount: '0',
         totalBetAmount: '0'

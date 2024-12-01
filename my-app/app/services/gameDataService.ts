@@ -1,9 +1,10 @@
-import { createClient } from 'urql';
+import { createClient, fetchExchange } from 'urql';
 
 const GOLDSKY_ENDPOINT = process.env.NEXT_PUBLIC_GOLDSKY_ENDPOINT;
 
 const client = createClient({
   url: GOLDSKY_ENDPOINT || '',
+  exchanges: [fetchExchange]
 });
 
 export interface GameData {
@@ -146,7 +147,7 @@ export const gameDataService = {
     `;
 
     try {
-      const { data } = await client.query(query).toPromise();
+      const { data } = await client.query(query, {}).toPromise();
       return data?.gameStats || null;
     } catch (error) {
       console.error('Error fetching game stats:', error);

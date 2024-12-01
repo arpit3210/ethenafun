@@ -1,5 +1,7 @@
 import { ethers } from 'ethers';
 import { GAME_CONTRACT_ABI, GAME_CONTRACT_ADDRESS, TOKEN_CONTRACT_ABI, TOKEN_CONTRACT_ADDRESS } from './contractConfig';
+import MockVRFCoordinatorV2Simple from './MockVRFCoordinatorV2Simple.json';
+
 
 export interface GameResult {
     isWin: boolean;
@@ -212,18 +214,46 @@ export class GameInteraction {
             console.log('Transaction confirmed:', receipt);
 
             // Find the RequestedRandomNumber event
-            const requestEvent = receipt.events?.find(
-                (event: any) => event.event === 'RequestedRandomNumber'
-            );
+      // Get RequestedRandomNumber event
+const requestEvent = receipt.logs.find((log: ethers.Log) => {
+    try {
+        const decoded = this.gameContract.interface.parseLog(log);
+        return decoded?.name === 'RequestedRandomNumber';
+    } catch (e) {
+        return false;
+    }
+});
 
-            if (!requestEvent) {
-                throw new Error('RequestedRandomNumber event not found');
-            }
+if (!requestEvent) {
+    throw new Error('RequestedRandomNumber event not found');
+}
 
-            const requestId = requestEvent.args.requestId;
-            console.log('Random number requested with ID:', requestId);
+// const requestId = this.gameContract.interface.parseLog(requestEvent).args[0];
+
+const requestId = this.gameContract.interface.parseLog(requestEvent)?.args[0];
+if (!requestId) {
+    throw new Error('Failed to parse RequestedRandomNumber event');
+}
+
+console.log('VRF request ID:', requestId.toString());
 
             // Step 2: Wait for VRF fulfillment
+
+// Add this code after getting the requestId:
+// Get VRF Coordinator and fulfill request
+const vrfCoordinatorAddress = await this.gameContract.getVRFCoordinator();
+const vrfCoordinator = new ethers.Contract(
+    vrfCoordinatorAddress,
+    MockVRFCoordinatorV2Simple.abi,
+    this.signer
+);
+
+console.log('Fulfilling VRF request...');
+const fulfillTx = await vrfCoordinator.fulfillRandomWords(requestId);
+await fulfillTx.wait();
+console.log('VRF request fulfilled');
+
+
             return new Promise((resolve, reject) => {
                 console.log('Setting up GameResult event listener...');
                 
