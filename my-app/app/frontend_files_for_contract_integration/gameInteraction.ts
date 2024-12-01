@@ -395,10 +395,13 @@ export class GameInteraction {
         if (!this.signer) {
             throw new Error('Signer is not available');
         }
+const BetAmount = betAmount*BigInt(5);
 
+console.log("This is new bet BetAmount", BetAmount.toString());
         try {
             console.log('Approving bet amount:', betAmount.toString());
-            const tx = await this.tokenContract.approve(this.gameContract.target, betAmount);
+            // we just increasing the bet amount by 5 times so user dont need to approve again
+            const tx = await this.tokenContract.approve(this.gameContract.target, BetAmount.toString());
             console.log('Approval transaction sent:', tx.hash);
             await tx.wait();
             return tx;
