@@ -9,6 +9,7 @@ interface GameResult {
   isWin: boolean;
   amount: string;
   multiplier: number;
+  fulfilled: boolean;
 }
 
 export const useHeadOrTailGame = () => {
@@ -18,7 +19,7 @@ export const useHeadOrTailGame = () => {
   const [amount, setAmount] = useState<string>('0.1');
   const [isFlipping, setIsFlipping] = useState(false);
   const [gameHistory, setGameHistory] = useState<any[]>([]);
-  const [showResult, setShowResult] = useState(false);
+  const [showResult, setShowResult] = useState<boolean>(false);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
   const [potentialProfit, setPotentialProfit] = useState<string>('0.0');
   const [error, setError] = useState<string | null>(null);
@@ -97,44 +98,36 @@ export const useHeadOrTailGame = () => {
     try {
       setIsFlipping(true);
       setError(null);
-      
-      // Validate bet amount
-      const betAmount = parseFloat(amount);
-      if (betAmount < 0.1 || betAmount > 0.5) {
-        throw new Error('Bet amount must be between 0.1 and 0.5 USDe');
-      }
-      
-      // Format amount for contract
+      setShowResult(true); // Show modal immediately in loading state
+      setGameResult({
+        isWin: false,
+        amount: amount,
+        multiplier: GAME_CONFIG.NORMAL_MULTIPLIER,
+        fulfilled: false
+      });
+
       const formattedAmount = formatNumberForContract(amount);
-      
-      // Check allowance and approve if needed
-      const currentAllowance = await gameInteraction.checkAllowance();
-      // if (currentAllowance < BigInt(formattedAmount)) {
-      //   console.log('Approving token spending...');
-      //   await gameInteraction.approveTokenSpending(formattedAmount);
-      //   console.log('Token spending approved');
-      // } else {
-      //   console.log('Sufficient allowance exists');
-      // }
-      
+      console.log('Placing bet with amount:', formattedAmount);
+
       // Place bet and wait for result
-      console.log('Placing bet...');
       const result = await gameInteraction.play(selectedSide === 'HEAD', BigInt(formattedAmount));
-      console.log('Game result received:', result);
       
-      // Update game result
+      // Update game result with additional information
       setGameResult({
         isWin: result.isWin,
         amount: result.isWin ? result.amountWon : result.betAmount,
-        multiplier: result.bonus ? GAME_CONFIG.BONUS_MULTIPLIER : GAME_CONFIG.NORMAL_MULTIPLIER
+        multiplier: result.bonus ? GAME_CONFIG.BONUS_MULTIPLIER : GAME_CONFIG.NORMAL_MULTIPLIER,
+        fulfilled: true
       });
-      setShowResult(true);
+
+      // Refresh balance and history after game
+      await fetchBalance();
+      await fetchGameHistory();
       
-      // Refresh data
-      await Promise.all([fetchBalance(), fetchGameHistory()]);
     } catch (error: any) {
       console.error('Error placing bet:', error);
       setError(error.message || 'Failed to place bet');
+      setShowResult(false); // Hide modal on error
     } finally {
       setIsFlipping(false);
     }
@@ -143,7 +136,6 @@ export const useHeadOrTailGame = () => {
   const closeResultModal = useCallback(() => {
     setShowResult(false);
     setGameResult(null);
-    setError(null);
   }, []);
 
   return {

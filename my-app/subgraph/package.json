@@ -1,0 +1,16 @@
+{
+  "name": "ethena-head-tail-subgraph",
+  "version": "0.1.0",
+  "scripts": {
+    "codegen": "graph codegen",
+    "build": "graph build",
+    "deploy": "graph deploy --node https://api.goldsky.com/subgraphs/name/your-username/ethena-head-tail ethena-head-tail",
+    "create-local": "graph create --node http://localhost:8020/ ethena-head-tail",
+    "remove-local": "graph remove --node http://localhost:8020/ ethena-head-tail",
+    "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 ethena-head-tail"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "0.51.0",
+    "@graphprotocol/graph-ts": "0.31.0"
+  }
+}

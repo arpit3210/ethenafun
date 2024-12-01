@@ -14,6 +14,7 @@ interface Web3ContextType {
   disconnect: () => void;
   switchNetwork: () => Promise<void>;
   isCorrectNetwork: boolean;
+  isConnected: boolean;
 }
 
 const Web3Context = createContext<Web3ContextType | null>(null);
@@ -24,6 +25,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState('0');
   const [gameInteraction, setGameInteraction] = useState<GameInteraction | null>(null);
   const [isCorrectNetwork, setIsCorrectNetwork] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
   const updateBalance = async (gameInteraction: GameInteraction) => {
     try {
@@ -44,6 +46,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         setChainId(null);
         setGameInteraction(null);
         setIsCorrectNetwork(false);
+        setIsConnected(false);
 
         // Initialize provider
         console.log('Initializing provider...');
@@ -140,6 +143,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
           console.log('Chain ID set:', currentChainId);
           setGameInteraction(gameInteractionInstance);
           console.log('GameInteraction set in state');
+          setIsConnected(true);
 
           // Get initial balance
           console.log('Fetching initial balance...');
@@ -166,6 +170,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         setChainId(null);
         setGameInteraction(null);
         setIsCorrectNetwork(false);
+        setIsConnected(false);
         
         // Throw a user-friendly error message
         throw error;
@@ -178,8 +183,9 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const disconnect = () => {
     setAccount(null);
     setChainId(null);
-    setBalance('0');
     setGameInteraction(null);
+    setIsCorrectNetwork(false);
+    setIsConnected(false);
   };
 
   const switchNetwork = async () => {
@@ -252,6 +258,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         disconnect,
         switchNetwork,
         isCorrectNetwork,
+        isConnected,
       }}
     >
       {children}
