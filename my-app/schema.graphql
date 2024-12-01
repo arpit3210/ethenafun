@@ -1,0 +1,34 @@
+type Game @entity {
+  id: ID!
+  player: Player!
+  requestId: BigInt!
+  gameId: BigInt!
+  isHead: Boolean!
+  isWinner: Boolean!
+  betAmount: BigInt!
+  amountWon: BigInt!
+  bonus: Boolean!
+  timestamp: BigInt!
+  blockNumber: BigInt!
+  transactionHash: String!
+}
+
+type Player @entity {
+  id: ID!
+  address: String!
+  totalGames: Int!
+  totalWins: Int!
+  totalLosses: Int!
+  totalBetAmount: BigInt!
+  totalWinAmount: BigInt!
+  games: [Game!]! @derivedFrom(field: "player")
+}
+
+type GameStats @entity {
+  id: ID!
+  totalGames: Int!
+  totalPlayers: Int!
+  totalBetAmount: BigInt!
+  totalWinAmount: BigInt!
+  lastUpdated: BigInt!
+}
