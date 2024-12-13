@@ -130,6 +130,48 @@ async function playGames(game, token, signer, count, strategy = "random") {
     };
 }
 
+async function generateGameReport(results) {
+    console.log("\n🎲 Head or Tail Game Report 🎲");
+    console.log("----------------------------");
+    
+    // Overall Statistics
+    const totalGames = results.length;
+    const gamesWon = results.filter(r => r.won).length;
+    const gamesLost = totalGames - gamesWon;
+    
+    console.log(`Total Games Played: ${totalGames}`);
+    console.log(`Games Won: ${gamesWon} (${((gamesWon/totalGames)*100).toFixed(2)}%)`);
+    console.log(`Games Lost: ${gamesLost} (${((gamesLost/totalGames)*100).toFixed(2)}%)`);
+    
+    // Detailed Game Results
+    console.log("\nDetailed Game Results:");
+    results.forEach((result, index) => {
+        console.log(`Game ${index + 1}: 
+  Choice: ${result.choice ? 'HEAD' : 'TAIL'}
+  Result: ${result.won ? '🎉 WON' : '❌ LOST'}
+  Amount ${result.won ? 'Won' : 'Lost'}: ${ethers.formatEther(result.amount)} USDe`);
+    });
+    
+    // Profit/Loss Calculation
+    const totalAmountWon = results.reduce((sum, r) => r.won ? sum + BigInt(ethers.utils.parseEther(r.amount)) : sum, 0n);
+    const totalAmountLost = results.reduce((sum, r) => !r.won ? sum + BigInt(ethers.utils.parseEther(r.amount)) : sum, 0n);
+    const netProfit = totalAmountWon - totalAmountLost;
+    
+    console.log("\n💰 Financial Summary:");
+    console.log(`Total Amount Won: ${ethers.formatEther(totalAmountWon)} USDe`);
+    console.log(`Total Amount Lost: ${ethers.formatEther(totalAmountLost)} USDe`);
+    console.log(`Net Profit/Loss: ${ethers.formatEther(netProfit)} USDe`);
+    
+    return {
+        totalGames,
+        gamesWon,
+        gamesLost,
+        totalAmountWon,
+        totalAmountLost,
+        netProfit
+    };
+}
+
 async function main() {
     try {
         // Contract addresses from latest deployment
@@ -200,6 +242,16 @@ async function main() {
         const fs = require("fs");
         fs.writeFileSync("win_lose_report.md", report);
         console.log("\nDetailed report generated: win_lose_report.md");
+
+        // Generate game report
+        const gameReport = await generateGameReport(allResults);
+        console.log("\nGame Report:");
+        console.log(`Total Games: ${gameReport.totalGames}`);
+        console.log(`Games Won: ${gameReport.gamesWon}`);
+        console.log(`Games Lost: ${gameReport.gamesLost}`);
+        console.log(`Total Amount Won: ${ethers.formatEther(gameReport.totalAmountWon)} USDe`);
+        console.log(`Total Amount Lost: ${ethers.formatEther(gameReport.totalAmountLost)} USDe`);
+        console.log(`Net Profit/Loss: ${ethers.formatEther(gameReport.netProfit)} USDe`);
 
     } catch (error) {
         console.error("Error during gameplay:", error);

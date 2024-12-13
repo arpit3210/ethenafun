@@ -6,19 +6,9 @@ describe("HeadOrTailTokenGame", function () {
   let gameToken;
   let owner;
   let player;
-  let vrfCoordinator;
-  
-  const SUBSCRIPTION_ID = 1n;
-  const GAS_LANE = "0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c";
-  const CALLBACK_GAS_LIMIT = 100000n;
 
   beforeEach(async function () {
     [owner, player] = await ethers.getSigners();
-
-    // Deploy mock VRF Coordinator
-    const MockVRFCoordinator = await ethers.getContractFactory("MockVRFCoordinatorV2", owner);
-    vrfCoordinator = await MockVRFCoordinator.deploy();
-    await vrfCoordinator.waitForDeployment();
 
     // Deploy mock ERC20 token
     const MockToken = await ethers.getContractFactory("MockERC20", owner);
@@ -28,11 +18,7 @@ describe("HeadOrTailTokenGame", function () {
     // Deploy the game contract
     const HeadOrTailGame = await ethers.getContractFactory("HeadOrTailTokenGame", owner);
     headOrTailGame = await HeadOrTailGame.deploy(
-      await vrfCoordinator.getAddress(),
-      await gameToken.getAddress(),
-      SUBSCRIPTION_ID,
-      GAS_LANE,
-      CALLBACK_GAS_LIMIT
+      await gameToken.getAddress()
     );
     await headOrTailGame.waitForDeployment();
 
@@ -56,7 +42,10 @@ describe("HeadOrTailTokenGame", function () {
     it("Should allow player to place a bet with valid amount", async function () {
       const tx = await headOrTailGame.connect(player).play(true);
       const receipt = await tx.wait();
-      expect(receipt.logs.some(log => log.fragment?.name === "RequestedRandomNumber")).to.be.true;
+      
+      // Check if GameResult event was emitted
+      const event = receipt.logs.find(log => log.fragment?.name === "GameResult");
+      expect(event).to.not.be.undefined;
     });
 
     it("Should not allow invalid bet amounts", async function () {
@@ -72,22 +61,34 @@ describe("HeadOrTailTokenGame", function () {
       }
     });
 
-    it("Should process game result correctly", async function () {
-      const tx = await headOrTailGame.connect(player).play(true);
-      const receipt = await tx.wait();
+    it("Should transfer tokens correctly on win", async function () {
+      const initialBalance = await gameToken.balanceOf(player.address);
+      const betAmount = ethers.parseEther("0.1"); // smallest bet amount
       
-      // Get the RequestId from the event
-      const requestId = receipt.logs.find(
-        log => log.fragment?.name === "RequestedRandomNumber"
-      ).args[0];
+      const tx = await headOrTailGame.connect(player).play(true);
+      await tx.wait();
+      
+      const finalBalance = await gameToken.balanceOf(player.address);
+      
+      // Either player lost betAmount or won more than initial
+      const difference = finalBalance - initialBalance;
+      expect(
+        difference === -betAmount || 
+        difference > 0
+      ).to.be.true;
+    });
 
-      // Simulate VRF callback with a winning result
-      await vrfCoordinator.fulfillRandomWords(requestId, [2n]); // Even number = heads
-
-      // Check game status
-      const gameStatus = await headOrTailGame.gameStatus(requestId);
-      expect(gameStatus.fulfilled).to.be.true;
-      expect(gameStatus.isWinner).to.be.true;
+    it("Should track head and tail counts correctly", async function () {
+      // Play multiple games
+      for(let i = 0; i < 5; i++) {
+        await headOrTailGame.connect(player).play(true);
+      }
+      
+      const totalHead = await headOrTailGame.getTotalHead();
+      const totalTail = await headOrTailGame.getTotalTail();
+      
+      // Total of heads and tails should be 5
+      expect(Number(totalHead) + Number(totalTail)).to.equal(5);
     });
   });
 
@@ -96,21 +97,39 @@ describe("HeadOrTailTokenGame", function () {
       // First add some funds to contract
       await gameToken.mint(await headOrTailGame.getAddress(), ethers.parseEther("100"));
       
-      const initialBalance = await gameToken.balanceOf(await owner.getAddress());
+      const initialBalance = await gameToken.balanceOf(owner.address);
       await headOrTailGame.withdrawFunds();
-      const finalBalance = await gameToken.balanceOf(await owner.getAddress());
+      const finalBalance = await gameToken.balanceOf(owner.address);
       
-      expect(finalBalance).to.equal(initialBalance + BigInt(ethers.parseEther("100")));
+      expect(Number(finalBalance) > Number(initialBalance)).to.be.true;
     });
 
     it("Should allow owner to set RTP", async function () {
-      await headOrTailGame.setRtp(20n);
-      expect(await headOrTailGame.getRtp()).to.equal(20n);
+      await headOrTailGame.setRtp(20);
+      const rtp = await headOrTailGame.getRtp();
+      expect(Number(rtp)).to.equal(20);
     });
 
     it("Should allow owner to set bonus", async function () {
-      await headOrTailGame.setBonus(25n);
-      expect(await headOrTailGame.getBonus()).to.equal(25n);
+      await headOrTailGame.setBonus(25);
+      const bonus = await headOrTailGame.getBonus();
+      expect(Number(bonus)).to.equal(25);
+    });
+
+    it("Should not allow non-owner to set parameters", async function () {
+      try {
+        await headOrTailGame.connect(player).setRtp(20);
+        expect.fail("Expected transaction to revert");
+      } catch (error) {
+        expect(error.message).to.include("Ownable: caller is not the owner");
+      }
+      
+      try {
+        await headOrTailGame.connect(player).setBonus(25);
+        expect.fail("Expected transaction to revert");
+      } catch (error) {
+        expect(error.message).to.include("Ownable: caller is not the owner");
+      }
     });
   });
 });

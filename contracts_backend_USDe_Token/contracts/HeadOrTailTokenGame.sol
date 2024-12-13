@@ -4,20 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface ISimpleVRF {
-    function requestRandomWords(
-        bytes32 keyHash,
-        uint64 subId,
-        uint16 minimumRequestConfirmations,
-        uint32 callbackGasLimit,
-        uint32 numWords
-    ) external returns (uint256);
-}
-
 contract HeadOrTailTokenGame is Ownable {
     // Token contract
     IERC20 public gameToken;
-    ISimpleVRF private immutable i_vrfCoordinator;
 
     uint256 private gameCount;
     uint256 private rtp = 17;        // 1.7x for normal win
@@ -31,33 +20,15 @@ contract HeadOrTailTokenGame is Ownable {
 
     event GameResult(
         address indexed player,
-        uint256 indexed requestId,
-        uint gameId,
+        uint256 gameId,
         bool isWinner,
-        uint betAmount,
-        uint amountWon,
+        uint256 betAmount,
+        uint256 amountWon,
         bool bonus,
         bool isHead
     );
 
-    struct GameStatus {
-        uint256 fees;
-        uint256 randomWord;
-        address player;
-        bool isWinner;
-        bool fulfilled;
-        bool isHead;
-        uint256 betAmount;
-    }
-    mapping(uint256 => GameStatus) public gameStatus;
-
-    event RequestedRandomNumber(uint256 indexed requestId);
-
-    constructor(
-        address _vrfCoordinator,
-        address _gameTokenAddress
-    ) {
-        i_vrfCoordinator = ISimpleVRF(_vrfCoordinator);
+    constructor(address _gameTokenAddress) {
         gameToken = IERC20(_gameTokenAddress);
 
         allowedBetAmounts = [
@@ -69,7 +40,7 @@ contract HeadOrTailTokenGame is Ownable {
         ];
     }
 
-    function play(bool choice) external returns (uint256) {
+    function play(bool choice) external returns (bool) {
         // Validate bet amount
         require(
             isAllowedBetAmount(msg.sender),
@@ -83,49 +54,20 @@ contract HeadOrTailTokenGame is Ownable {
             "Token transfer failed"
         );
 
-        // Request random number
-        uint256 requestId = i_vrfCoordinator.requestRandomWords(
-            0x0000000000000000000000000000000000000000000000000000000000000000, // dummy keyHash
-            0, // dummy subId
-            1, // dummy confirmations
-            100000, // dummy gas limit
-            1 // numWords
-        );
+        // Generate random result using block data
+        uint256 randomNumber = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.timestamp,
+                    block.prevrandao,
+                    msg.sender,
+                    gameCount
+                )
+            )
+        ) % 100;
 
-        // Store game status
-        gameStatus[requestId] = GameStatus({
-            fees: 0,
-            randomWord: 0,
-            player: msg.sender,
-            isWinner: false,
-            fulfilled: false,
-            isHead: choice,
-            betAmount: betAmount
-        });
-
-        emit RequestedRandomNumber(requestId);
-        return requestId;
-    }
-
-    function rawFulfillRandomWords(
-        uint256 requestId,
-        uint256[] memory randomWords
-    ) external {
-        require(msg.sender == address(i_vrfCoordinator), "Only VRF can fulfill");
-        fulfillRandomWords(requestId, randomWords);
-    }
-
-    function fulfillRandomWords(
-        uint256 requestId,
-        uint256[] memory randomWords
-    ) internal {
-        gameStatus[requestId].fulfilled = true;
-        gameStatus[requestId].randomWord = randomWords[0];
-
-        uint256 randomNumber = randomWords[0] % 100;
-
-        bool result = randomNumber % 2 == 0;
-        bool isWinner = (result == gameStatus[requestId].isHead);
+        bool result = randomNumber % 2 == 0;  // Even = Head, Odd = Tail
+        bool isWinner = (result == choice);
         bool bonusRound = randomNumber < bonusRate;
 
         result ? totalHead++ : totalTail++;
@@ -134,7 +76,7 @@ contract HeadOrTailTokenGame is Ownable {
         if (isWinner) {
             // Calculate winnings
             amountWon = multiply(
-                gameStatus[requestId].betAmount,
+                betAmount,
                 (DECIMALS * (bonusRound ? bonus : rtp)) / 10
             );
 
@@ -143,27 +85,26 @@ contract HeadOrTailTokenGame is Ownable {
             if (amountWon > contractBalance) {
                 amountWon = contractBalance;
             }
-
-            gameStatus[requestId].isWinner = true;
             
             // Transfer winnings to player
             require(
-                gameToken.transfer(gameStatus[requestId].player, amountWon),
+                gameToken.transfer(msg.sender, amountWon),
                 "Winnings transfer failed"
             );
         }
 
         gameCount++;
         emit GameResult(
-            gameStatus[requestId].player,
-            requestId,
+            msg.sender,
             gameCount,
             isWinner,
-            gameStatus[requestId].betAmount,
+            betAmount,
             amountWon,
             bonusRound,
             result
         );
+
+        return isWinner;
     }
 
     // Withdraw tokens (only by owner)
@@ -231,9 +172,5 @@ contract HeadOrTailTokenGame is Ownable {
 
     function getTotalTail() public view returns (uint256) {
         return totalTail;
-    }
-
-    function getVRFCoordinator() public view returns (address) {
-        return address(i_vrfCoordinator);
     }
 }
