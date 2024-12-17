@@ -9,7 +9,7 @@ export default function Footer() {
           <div>
             <div className="text-2xl font-bold tracking-tighter gradient-text mb-4">ETHENAFUN</div>
             <p className="text-sm text-gray-400">
-              Copyright 2023 EthenaFun. All rights reserved.
+              Copyright 2024 EthenaFun. All rights reserved.
             </p>
           </div>
           
