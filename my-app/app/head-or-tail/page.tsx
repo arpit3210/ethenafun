@@ -15,6 +15,8 @@ import { useHeadOrTailGame } from '../hooks/useHeadOrTailGame'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import ResultModal from '../components/ResultModal';
+import { ContractEventsViewer } from "../components/HeadandTailEvents";
+
 
 export default function HeadOrTail() {
   const { account, walletConnected, connectWallet } = useWalletConnection();
@@ -35,6 +37,21 @@ export default function HeadOrTail() {
   } = useHeadOrTailGame();
 
   const [isRotating, setIsRotating] = useState(false);
+
+  const CONTRACT_ADDRESS = '0x81AAdF737Dc270F3C53B0a02C266d60Cd39Ca250';
+
+  // Contract ABI for parsing events
+  const CONTRACT_ABI = [
+    "event GameResult(" +
+    "address indexed player, " +
+    "uint256 gameId, " +
+    "bool isWinner, " +
+    "uint256 betAmount, " +
+    "uint256 amountWon, " +
+    "bool bonus, " +
+    "bool isHead" +
+    ")"
+  ];
 
   useEffect(() => {
     if (isFlipping) {
@@ -74,22 +91,22 @@ export default function HeadOrTail() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400">PICK NUMBER</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button 
+                    <Button
                       className={cn(
                         "h-12",
-                        selectedSide === 'HEAD' 
-                          ? "bg-[#7C3AED] hover:bg-[#6D28D9]" 
+                        selectedSide === 'HEAD'
+                          ? "bg-[#7C3AED] hover:bg-[#6D28D9]"
                           : "border-zinc-700 hover:bg-zinc-800"
                       )}
                       onClick={() => handleSelectSide('HEAD')}
                     >
                       HEAD
                     </Button>
-                    <Button 
+                    <Button
                       className={cn(
                         "h-12",
-                        selectedSide === 'TAIL' 
-                          ? "bg-[#7C3AED] hover:bg-[#6D28D9]" 
+                        selectedSide === 'TAIL'
+                          ? "bg-[#7C3AED] hover:bg-[#6D28D9]"
                           : "border-zinc-700 hover:bg-zinc-800"
                       )}
                       onClick={() => handleSelectSide('TAIL')}
@@ -125,7 +142,7 @@ export default function HeadOrTail() {
                 </div>
 
                 {walletConnected ? (
-                  <Button 
+                  <Button
                     className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12"
                     onClick={placeBet}
                     disabled={!selectedSide || !amount || isFlipping}
@@ -133,7 +150,7 @@ export default function HeadOrTail() {
                     {isFlipping ? 'FLIPPING...' : 'FLIP'}
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] h-12"
                     onClick={connectWallet}
                   >
@@ -175,7 +192,18 @@ export default function HeadOrTail() {
               </TabsList>
 
               <div className="mt-4">
-                <Table>
+
+                <ContractEventsViewer
+                  contractAddress={CONTRACT_ADDRESS}
+                  contractABI={CONTRACT_ABI}
+                  eventName="GameResult"
+                  limit={10}
+                  onError={(errorMessage) => {
+                    // Optional: Handle errors (e.g., log to error tracking service)
+                    console.error('Events fetch error:', errorMessage);
+                  }}
+                />
+                {/* <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>TIMER</TableHead>
@@ -201,7 +229,7 @@ export default function HeadOrTail() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                </Table> */}
               </div>
             </Tabs>
           </div>
