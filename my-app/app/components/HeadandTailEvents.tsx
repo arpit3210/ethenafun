@@ -141,6 +141,7 @@ export function ContractEventsViewer({
 
   // Fetch events on component mount or when connected
   useEffect(() => {
+    handleConnect();
     // Check if wallet is already connected
     const checkConnection = async () => {
       if (window.ethereum) {
@@ -167,7 +168,7 @@ export function ContractEventsViewer({
       
       {!isConnected && showConnectButton ? (
         <Button onClick={handleConnect} className="mb-4">
-          Connect Wallet
+         Please Connect Wallet For Latest Events
         </Button>
       ) : (
         <div className="space-y-4">
@@ -202,7 +203,7 @@ export function ContractEventsViewer({
                 <tbody>
             
                   {events.map((event, index) => (
-                    <tr key={index}>
+                    <tr className='border-b my-10 py-10 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted' key={index}>
                       <td>
                         <a 
                           href={`https://etherscan.io/tx/${event.transactionHash}`} 
@@ -213,14 +214,14 @@ export function ContractEventsViewer({
                           {event.transactionHash.slice(0, 4)}... {event.transactionHash.slice(-4)}
                         </a>
                       </td>
-                      <td>0x{event.player.slice(2, 4)}...{event.player.slice(-4)}</td>
+                      <td className='text-gray-700 '>🟣0x{event.player.slice(2, 4)}...{event.player.slice(-4)}</td>
                       <td className={event.isWinner ? 'text-green-600' : 'text-red-600'}>
                         {event.isWinner ? 'Won' : 'Lost'}
                       </td>
                       <td className={event.isWinner ? 'text-green-600' : 'text-red-600'}>
-                        {event.isWinner ? `+${event.amountWon} USDe` : `-${event.amountWon} USDe`}
+                        {event.isWinner ? `+${event.amountWon} USDe 🏆` : `-${event.amountWon} USDe`}
                       </td>
-                      <td>{event.isHead ? 'Heads' : 'Tails'}</td>
+                      <td className='text-gray-500 '>{event.isHead ? 'Tails' : 'Heads'}</td>
                     </tr>
                   ))}
                 </tbody>
