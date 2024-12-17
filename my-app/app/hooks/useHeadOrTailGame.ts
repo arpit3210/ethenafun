@@ -6,7 +6,7 @@ import { GameInteraction } from '../frontend_files_for_contract_integration/game
 import { ethers } from 'ethers';
 
 interface GameResult {
-  isWin: boolean;
+  isWin: boolean | undefined ;
   amount: string;
   multiplier: number;
   fulfilled: boolean;
@@ -100,7 +100,7 @@ export const useHeadOrTailGame = () => {
       setError(null);
       setShowResult(true); // Show modal immediately in loading state
       setGameResult({
-        isWin: false,
+        isWin: undefined,
         amount: amount,
         multiplier: GAME_CONFIG.NORMAL_MULTIPLIER,
         fulfilled: false
@@ -111,7 +111,8 @@ export const useHeadOrTailGame = () => {
 
       // Place bet and wait for result
       const result = await gameInteraction.play(selectedSide === 'HEAD', BigInt(formattedAmount));
-      
+      console.log('Game result Printed:', result);
+  
       // Update game result with additional information
       setGameResult({
         isWin: result.isWin,

@@ -4,7 +4,7 @@ interface ResultModalProps {
   isOpen: boolean;
   onClose: () => void;
   result: {
-    isWin: boolean;
+    isWin: boolean | undefined;
     amount: string;
     multiplier: number;
     fulfilled: boolean;
@@ -28,27 +28,29 @@ const ResultModal: React.FC<ResultModalProps> = ({ isOpen, onClose, result }) =>
             </div>
           ) : (
             <>
-              <div className={`text-6xl mb-4 ${result.isWin ? 'text-green-500' : 'text-red-500'}`}>
-                {result.isWin ? '🎉' : '😢'}
+              <div className={`text-6xl mb-4 ${result.isWin === true ? 'text-green-500' : result.isWin === false ? 'text-red-500' : 'text-gray-500'}`}>
+                {result.isWin === true ? '🎉' : result.isWin === false ? '😢' : '❓'}
               </div>
-              <h2 className={`text-3xl font-bold mb-4 ${result.isWin ? 'text-green-500' : 'text-red-500'}`}>
-                {result.isWin ? 'You Won!' : 'You Lost'}
+              <h2 className={`text-3xl font-bold mb-4 ${result.isWin === true ? 'text-green-500' : result.isWin === false ? 'text-red-500' : 'text-gray-500'}`}>
+                {result.isWin === true ? 'You Won!' : result.isWin === false ? 'You Lost' : 'Result Pending'}
               </h2>
               <div className="text-gray-300 mb-6">
-                {result.isWin ? (
+                {result.isWin === true ? (
                   <div>
                     <p className="text-xl">You won {winAmount.toFixed(2)} USDe</p>
                     <p className="text-sm text-gray-400">({result.multiplier}x multiplier)</p>
                   </div>
-                ) : (
+                ) : result.isWin === false ? (
                   <p className="text-xl">You lost {result.amount} USDe</p>
+                ) : (
+                  <p className="text-xl text-gray-500">Waiting for game result...</p>
                 )}
               </div>
               <button
                 onClick={onClose}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200"
               >
-                Play Again
+                {result.isWin === undefined ? 'Cancel' : 'Play Again'}
               </button>
             </>
           )}
