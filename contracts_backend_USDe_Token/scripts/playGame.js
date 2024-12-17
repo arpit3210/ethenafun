@@ -1,269 +1,259 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
+const fs = require('fs');
+const path = require('path');
 
-async function ensureContractBalance(game, token, signer) {
-    // Check contract balance
-    const contractBalance = await token.balanceOf(game.target);
-    console.log("\nContract balance:", ethers.formatEther(contractBalance), "USDe");
-    
-    // If balance is low, top up with 10 USDe
-    if (contractBalance < ethers.parseEther("10")) {
-        console.log("Contract balance is low. Topping up with 10 USDe...");
-        const topUpAmount = ethers.parseEther("10");
-        
-        // Approve tokens
-        const approveTx = await token.approve(game.target, topUpAmount);
-        await approveTx.wait();
-        console.log("Tokens approved for top-up");
-        
-        // Top up contract
-        const topUpTx = await game.topUpBalance(topUpAmount);
-        await topUpTx.wait();
-        console.log("Contract topped up successfully!");
-        
-        const newBalance = await token.balanceOf(game.target);
-        console.log("New contract balance:", ethers.formatEther(newBalance), "USDe\n");
-    }
+// Utility function to generate random choice
+function getRandomChoice() {
+    return Math.random() < 0.5;
 }
 
-async function playGames(game, token, signer, count, strategy = "random") {
-    let results = [];
-    const startBalance = await token.balanceOf(signer.address);
+// Utility function to get random bet amount
+// Utility function to get random bet amount
+function getRandomBetAmount() {
+    const allowedBetAmounts = [
+        ethers.parseEther("0.1"),
+        ethers.parseEther("0.2"),
+        ethers.parseEther("0.3"),
+        ethers.parseEther("0.4"),
+        ethers.parseEther("0.5")
+    ];
     
-    // Approve token spending
-    const betAmount = ethers.parseEther("0.1");
-    const totalNeeded = betAmount * BigInt(count);
-    const currentAllowance = await token.allowance(signer.address, game.target);
-    
-    if (currentAllowance < totalNeeded) {
-        console.log("Approving tokens for gameplay...");
-        const approveTx = await token.approve(game.target, totalNeeded);
-        await approveTx.wait();
-        console.log("Tokens approved!\n");
-    }
+    // Use BigInt-safe random selection
+    const randomIndex = BigInt(Math.floor(Math.random() * allowedBetAmounts.length));
+    return allowedBetAmounts[Number(randomIndex)];
+}
 
-    // Play games
-    for (let i = 0; i < count; i++) {
+async function playGame(game, token, player, betAmount) {
+    try {
+        // Determine random choice
+        const choice = getRandomChoice();
+        
+        // Predefined allowed bet amounts in the contract
+        const allowedBetAmounts = [
+            ethers.parseEther("0.1"),
+            ethers.parseEther("0.2"),
+            ethers.parseEther("0.3"),
+            ethers.parseEther("0.4"),
+            ethers.parseEther("0.5")
+        ];
+        
+        // Find the closest allowed bet amount
+        const closestBetAmount = allowedBetAmounts.reduce((prev, curr) => 
+            curr <= betAmount ? curr : prev
+        );
+        
+        console.log(`Adjusted bet amount: ${ethers.formatEther(closestBetAmount)} USDe`);
+        
+        // Detailed contract interaction debugging
         try {
-            console.log(`Game ${i + 1}/${count}:`);
+            // Check contract interactions
+            console.log(`Game Contract Address: ${game.target}`);
+            console.log(`Token Contract Address: ${token.target}`);
+            console.log(`Player Address: ${player.address}`);
             
-            // Choose based on strategy
-            let choice;
-            switch(strategy) {
-                case "always_head":
-                    choice = true;
-                    break;
-                case "always_tail":
-                    choice = false;
-                    break;
-                case "alternate":
-                    choice = i % 2 === 0;
-                    break;
-                default: // random
-                    choice = Math.random() < 0.5;
+            // Check token balance
+            const balance = await token.balanceOf(player.address);
+            console.log(`Player Token Balance: ${ethers.formatEther(balance)} USDe`);
+            
+            // Check token allowance
+            const allowance = await token.allowance(player.address, game.target);
+            console.log(`Current Token Allowance: ${ethers.formatEther(allowance)} USDe`);
+            
+            // Approve tokens if needed
+            if (allowance < closestBetAmount) {
+                console.log(`Approving ${ethers.formatEther(closestBetAmount)} USDe for game contract`);
+                const approveTx = await token.connect(player).approve(game.target, closestBetAmount);
+                const approveReceipt = await approveTx.wait();
+                console.log(`Approve Tx Hash: ${approveTx.hash}`);
+                console.log(`Approve Tx Block: ${approveReceipt.blockNumber}`);
             }
-            console.log("Choosing:", choice ? "HEAD" : "TAIL");
+            
+            // Log transaction details
+            console.log(`Attempting to play game with choice: ${choice ? "HEAD" : "TAIL"}, bet: ${ethers.formatEther(closestBetAmount)} USDe`);
+            
+            // Set up event listeners
+            const randomNumberListener = new Promise((resolve) => {
+                game.once("RandomNumber", (randomNumber) => {
+                    console.log(`🎲 Random Number Generated: ${randomNumber}`);
+                    resolve(randomNumber);
+                });
+            });
 
-            // Get balance before playing
-            const balanceBefore = await token.balanceOf(signer.address);
-
-            // Play the game
-            const tx = await game.play(choice);
-            console.log("Transaction sent, waiting for confirmation...");
+            const gameResultListener = new Promise((resolve) => {
+                game.once("GameResult", (player, gameId, isWinner, betAmount, amountWon, bonus, isHead) => {
+                    console.log(`🏆 Game Result Event:`);
+                    console.log(`  Player: ${player}`);
+                    console.log(`  Game ID: ${gameId}`);
+                    console.log(`  Winner: ${isWinner}`);
+                    console.log(`  Bet Amount: ${ethers.formatEther(betAmount)} USDe`);
+                    console.log(`  Amount Won: ${ethers.formatEther(amountWon)} USDe`);
+                    console.log(`  Bonus Round: ${bonus}`);
+                    console.log(`  Choice: ${isHead ? "HEAD" : "TAIL"}`);
+                    
+                    resolve({
+                        player,
+                        gameId,
+                        isWinner,
+                        betAmount,
+                        amountWon,
+                        bonus,
+                        isHead
+                    });
+                });
+            });
+            
+            // Attempt to play the game with detailed error handling
+            const tx = await game.connect(player).play(choice);
+            console.log(`Transaction sent: ${tx.hash}`);
+            
             const receipt = await tx.wait();
-
-            // Get the RequestedRandomNumber event
-            const requestEvent = receipt.logs.find(log => {
-                try {
-                    const decoded = game.interface.parseLog(log);
-                    return decoded.name === "RequestedRandomNumber";
-                } catch (e) {
-                    return false;
-                }
-            });
-
-            if (!requestEvent) {
-                throw new Error("RequestedRandomNumber event not found");
-            }
-
-            const requestId = game.interface.parseLog(requestEvent).args[0];
-            console.log("Fulfilling VRF request...");
-
-            // Fulfill the VRF request
-            const vrfCoordinator = await ethers.getContractAt("MockVRFCoordinatorV2Simple", await game.getVRFCoordinator());
-            const fulfillTx = await vrfCoordinator.fulfillRandomWords(requestId);
-            await fulfillTx.wait();
-
-            // Get balance after playing
-            const balanceAfter = await token.balanceOf(signer.address);
-            const difference = balanceAfter - balanceBefore;
-            const won = difference > 0n;
-            const amountWon = difference > 0n ? difference : 0n;
+            console.log(`Transaction mined in block ${receipt.blockNumber}`);
             
-            results.push({
-                game: i + 1,
+            // Wait for and log events
+            const [randomNumber, gameResult] = await Promise.all([
+                randomNumberListener, 
+                gameResultListener
+            ]);
+            
+            return {
+                player: player.address,
                 choice: choice ? "HEAD" : "TAIL",
-                won,
-                amount: ethers.formatEther(amountWon),
-                netChange: ethers.formatEther(difference)
-            });
-
-            console.log(`Result: ${won ? "WON" : "LOST"}`);
-            if (won) {
-                console.log(`Won: ${ethers.formatEther(amountWon)} USDe`);
+                betAmount: closestBetAmount.toString(),
+                won: gameResult.isWinner,
+                amountWon: gameResult.amountWon.toString(),
+                bonus: gameResult.bonus,
+                randomNumber: randomNumber.toString()
+            };
+        } catch (txError) {
+            // Comprehensive error logging
+            console.error("🚨 Transaction Error Details:");
+            console.error(`Error Message: ${txError.message}`);
+            console.error(`Error Code: ${txError.code}`);
+            
+            // Additional error context
+            if (txError.transaction) {
+                console.error(`Transaction Data: ${JSON.stringify(txError.transaction, null, 2)}`);
             }
-            console.log(`Net change: ${ethers.formatEther(difference)} USDe\n`);
-
-            // Add a small delay between games
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-        } catch (gameError) {
-            console.error(`Error in game ${i + 1}:`, gameError.message);
-            break;
+            
+            // Try to decode revert reason
+            try {
+                const errorInterface = new ethers.Interface([
+                    "error InsufficientAllowance()",
+                    "error InvalidBetAmount()",
+                    "error InsufficientBalance()"
+                ]);
+                
+                if (txError.data) {
+                    const decodedError = errorInterface.parseError(txError.data);
+                    console.error(`Decoded Revert Reason: ${decodedError.name}`);
+                }
+            } catch (decodeError) {
+                console.error(`Could not decode error: ${decodeError.message}`);
+            }
+            
+            throw txError;
         }
+    } catch (error) {
+        console.error(`🔴 Game play error: ${error.message}`);
+        return null;
     }
-
-    return {
-        results,
-        startBalance,
-        endBalance: await token.balanceOf(signer.address)
-    };
-}
-
-async function generateGameReport(results) {
-    console.log("\n🎲 Head or Tail Game Report 🎲");
-    console.log("----------------------------");
-    
-    // Overall Statistics
-    const totalGames = results.length;
-    const gamesWon = results.filter(r => r.won).length;
-    const gamesLost = totalGames - gamesWon;
-    
-    console.log(`Total Games Played: ${totalGames}`);
-    console.log(`Games Won: ${gamesWon} (${((gamesWon/totalGames)*100).toFixed(2)}%)`);
-    console.log(`Games Lost: ${gamesLost} (${((gamesLost/totalGames)*100).toFixed(2)}%)`);
-    
-    // Detailed Game Results
-    console.log("\nDetailed Game Results:");
-    results.forEach((result, index) => {
-        console.log(`Game ${index + 1}: 
-  Choice: ${result.choice ? 'HEAD' : 'TAIL'}
-  Result: ${result.won ? '🎉 WON' : '❌ LOST'}
-  Amount ${result.won ? 'Won' : 'Lost'}: ${ethers.formatEther(result.amount)} USDe`);
-    });
-    
-    // Profit/Loss Calculation
-    const totalAmountWon = results.reduce((sum, r) => r.won ? sum + BigInt(ethers.utils.parseEther(r.amount)) : sum, 0n);
-    const totalAmountLost = results.reduce((sum, r) => !r.won ? sum + BigInt(ethers.utils.parseEther(r.amount)) : sum, 0n);
-    const netProfit = totalAmountWon - totalAmountLost;
-    
-    console.log("\n💰 Financial Summary:");
-    console.log(`Total Amount Won: ${ethers.formatEther(totalAmountWon)} USDe`);
-    console.log(`Total Amount Lost: ${ethers.formatEther(totalAmountLost)} USDe`);
-    console.log(`Net Profit/Loss: ${ethers.formatEther(netProfit)} USDe`);
-    
-    return {
-        totalGames,
-        gamesWon,
-        gamesLost,
-        totalAmountWon,
-        totalAmountLost,
-        netProfit
-    };
 }
 
 async function main() {
-    try {
-        // Contract addresses from latest deployment
-        const gameAddress = "0xaB8B61dc2afC24100b0fF999857023690c1D4114";
-        const tokenAddress = "0x426E7d03f9803Dd11cb8616C65b99a3c0AfeA6dE";
+    // Game and token addresses from previous deployment
+    // const gameAddress = "0x81AAdF737Dc270F3C53B0a02C266d60Cd39Ca250";
+
+
+    // Game and token addresses from latest deployment
+    const gameAddress = "0x5F7cB6FeE571c5BEBb9f3E415c39F0Ce01684b70";
+    const tokenAddress = "0x426E7d03f9803Dd11cb8616C65b99a3c0AfeA6dE";
+    
+    // Connect to contracts
+    const game = await ethers.getContractAt("HeadOrTailTokenGame", gameAddress);
+    const token = await ethers.getContractAt("IERC20", tokenAddress);
+    
+    // Retrieve network
+    const network = await ethers.provider.getNetwork();
+    console.log(`🌐 Connected to network: ${network.name} (Chain ID: ${network.chainId})`);
+    
+    // Get the first signer (deployer/main account)
+    const [player] = await ethers.getSigners();
+    console.log(`🎮 Playing with account: ${player.address}`);
+    
+    // Check player's token balance
+    const balance = await token.balanceOf(player.address);
+    console.log(`💰 Your USDe balance: ${ethers.formatEther(balance)} USDe`);
+    
+    // Gameplay results
+    const gameResults = [];
+    
+    // Play 10 games
+    console.log("🎲 Starting 10 games of Head or Tail...");
+    
+    for (let i = 0; i < 10; i++) {
+        // Get random bet amount
+        const betAmount = getRandomBetAmount();
         
-        // Connect to contracts
-        const [signer] = await ethers.getSigners();
-        const game = await ethers.getContractAt("HeadOrTailTokenGame", gameAddress);
-        const token = await ethers.getContractAt("IERC20", tokenAddress);
+        console.log(`\n🎮 Game ${i + 1}: Betting ${ethers.formatEther(betAmount)} USDe`);
         
-        console.log("Starting game session...");
-        console.log("Your address:", signer.address);
-
-        // Ensure contract has enough balance
-        await ensureContractBalance(game, token, signer);
-
-        // Play with different strategies
-        const strategies = [
-            { name: "Random", type: "random", games: 20 },
-            { name: "Always HEAD", type: "always_head", games: 15 },
-            { name: "Always TAIL", type: "always_tail", games: 15 }
-        ];
-
-        let allResults = [];
-        let report = "# Extended Game Session Report\n\n";
-
-        for (const strategy of strategies) {
-            console.log(`\n## Playing ${strategy.games} games with ${strategy.name} strategy`);
-            const gameSession = await playGames(game, token, signer, strategy.games, strategy.type);
-            
-            const wins = gameSession.results.filter(r => r.won).length;
-            const totalWon = gameSession.results.reduce((acc, r) => acc + (r.won ? parseFloat(r.amount) : 0), 0);
-            const netChange = ethers.formatEther(gameSession.endBalance - gameSession.startBalance);
-
-            report += `\n## ${strategy.name} Strategy Results\n`;
-            report += `- Games Played: ${strategy.games}\n`;
-            report += `- Wins: ${wins}\n`;
-            report += `- Losses: ${strategy.games - wins}\n`;
-            report += `- Win Rate: ${((wins/strategy.games) * 100).toFixed(1)}%\n`;
-            report += `- Total Amount Won: ${totalWon.toFixed(2)} USDe\n`;
-            report += `- Net Change: ${netChange} USDe\n\n`;
-            report += `### Detailed Results\n`;
-            
-            gameSession.results.forEach(r => {
-                report += `- Game ${r.game}: ${r.choice} - ${r.won ? "WON" : "LOST"}`;
-                if (r.won) report += ` (Won: ${r.amount} USDe)`;
-                report += ` [Net: ${r.netChange} USDe]\n`;
-            });
-            
-            allResults = allResults.concat(gameSession.results);
-        }
-
-        // Overall statistics
-        const totalGames = allResults.length;
-        const totalWins = allResults.filter(r => r.won).length;
-        const totalAmountWon = allResults.reduce((acc, r) => acc + (r.won ? parseFloat(r.amount) : 0), 0);
-
-        report = `# Overall Statistics\n` +
-                `- Total Games Played: ${totalGames}\n` +
-                `- Total Wins: ${totalWins}\n` +
-                `- Total Losses: ${totalGames - totalWins}\n` +
-                `- Overall Win Rate: ${((totalWins/totalGames) * 100).toFixed(1)}%\n` +
-                `- Total Amount Won: ${totalAmountWon.toFixed(2)} USDe\n\n` +
-                report;
-
-        // Write report to file
-        const fs = require("fs");
-        fs.writeFileSync("win_lose_report.md", report);
-        console.log("\nDetailed report generated: win_lose_report.md");
-
-        // Generate game report
-        const gameReport = await generateGameReport(allResults);
-        console.log("\nGame Report:");
-        console.log(`Total Games: ${gameReport.totalGames}`);
-        console.log(`Games Won: ${gameReport.gamesWon}`);
-        console.log(`Games Lost: ${gameReport.gamesLost}`);
-        console.log(`Total Amount Won: ${ethers.formatEther(gameReport.totalAmountWon)} USDe`);
-        console.log(`Total Amount Lost: ${ethers.formatEther(gameReport.totalAmountLost)} USDe`);
-        console.log(`Net Profit/Loss: ${ethers.formatEther(gameReport.netProfit)} USDe`);
-
-    } catch (error) {
-        console.error("Error during gameplay:", error);
-        if (error.data) {
-            console.error("Error data:", error.data);
+        // Play the game
+        const result = await playGame(game, token, player, betAmount);
+        
+        if (result) {
+            gameResults.push(result);
+            console.log(`   Result: ${result.won ? "🏆 WON" : "❌ LOST"}`);
+            console.log(`   Choice: ${result.choice}`);
+            console.log(`   Amount Won: ${ethers.formatEther(result.amountWon)} USDe`);
         }
     }
+    
+    // Calculate statistics
+    const totalGames = gameResults.length;
+    const wins = gameResults.filter(r => r.won).length;
+    const losses = totalGames - wins;
+    const winRate = (wins / totalGames) * 100;
+    const totalAmountWon = gameResults.reduce((sum, r) => 
+        r.won ? sum + BigInt(r.amountWon) : sum, 0n);
+    
+    // Generate markdown report
+    const reportContent = `# 🎲 Head or Tail Game Report
+
+## 🎮 Player Information
+- **Address**: \`${player.address}\`
+
+## 📊 Game Statistics
+- **Total Games Played**: ${totalGames}
+- **Wins**: ${wins}
+- **Losses**: ${losses}
+- **Win Rate**: ${winRate.toFixed(2)}%
+
+## 💰 Financial Summary
+- **Total Amount Won**: ${ethers.formatEther(totalAmountWon)} USDe
+
+## 🎮 Detailed Game Results
+
+| Game | Bet Amount | Choice | Result | Amount Won | Bonus | Random Number |
+|------|------------|--------|--------|------------|-------|--------------|
+${gameResults.map((result, index) => 
+    `| ${index + 1} | ${ethers.formatEther(result.betAmount)} USDe | ${result.choice} | ${result.won ? "✅ WON" : "❌ LOST"} | ${ethers.formatEther(result.amountWon)} USDe | ${result.bonus} | ${result.randomNumber} |`
+).join('\n')}
+
+## 🕒 Report Generated
+${new Date().toISOString()}
+`;
+    
+    // Save report
+    const reportPath = path.join(__dirname, '..', 'GameplayReport.md');
+    fs.writeFileSync(reportPath, reportContent, 'utf-8');
+    
+    console.log("\n📄 Detailed report saved to GameplayReport.md");
+    console.log(`\n🏆 Final Results: ${wins} wins out of ${totalGames} games`);
 }
 
 main()
     .then(() => process.exit(0))
     .catch((error) => {
-        console.error(error);
+        console.error("❌ Gameplay Error:", error);
         process.exit(1);
     });

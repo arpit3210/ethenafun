@@ -12,6 +12,7 @@ module.exports = {
       url: "https://testnet.rpc.ethena.fi",
       chainId: 52085143,
       accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 20000000000, // 20 Gwei
     },
     // Add other networks as needed
   },

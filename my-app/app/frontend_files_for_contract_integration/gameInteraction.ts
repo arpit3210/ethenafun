@@ -4,7 +4,7 @@ import MockVRFCoordinatorV2Simple from './MockVRFCoordinatorV2Simple.json';
 
 
 export interface GameResult {
-    isWin: boolean;
+    isWin: boolean | undefined;
     betAmount: string;
     amountWon: string;
     bonus: boolean;
@@ -195,188 +195,158 @@ export class GameInteraction {
         }
     }
 
-    async playGame(choice: boolean, amount: string): Promise<GameResult> {
-        try {
-            // Debug logging
-            console.log('playGame called with:', { choice, amount });
+    // async play(choice: boolean, amount: string): Promise<GameResult | undefined> {
+    //     try {
+    //         // Debug logging
+    //         console.log('playGame called with:', { choice, amount });
 
-            // Validate game contract
-            if (!this.gameContract) {
-                throw new Error('Game contract not initialized');
-            }
+    //         // Validate game contract
+    //         if (!this.gameContract) {
+    //             throw new Error('Game contract not initialized');
+    //         }
 
-            // Step 1: Place bet and request randomness
-            const tx = await this.gameContract.playGame(choice, ethers.parseUnits(amount, 18));
-            console.log('Transaction sent:', tx.hash);
+    //         // Step 1: Place bet
+    //         const tx = await this.gameContract.play(choice); // Call the play function directly
+    //         console.log('Transaction sent:', tx.hash);
 
-            // Wait for transaction confirmation
-            const receipt = await tx.wait();
-            console.log('Transaction confirmed:', receipt);
+    //         // Wait for transaction confirmation
+    //         const receipt = await tx.wait();
+    //         console.log('Transaction confirmed:', receipt);
 
-            // Find the RequestedRandomNumber event
-      // Get RequestedRandomNumber event
-const requestEvent = receipt.logs.find((log: ethers.Log) => {
-    try {
-        const decoded = this.gameContract.interface.parseLog(log);
-        return decoded?.name === 'RequestedRandomNumber';
-    } catch (e) {
-        return false;
-    }
-});
+    //         // Fetch the game result from the event logs
+    //         const gameResult = await this.getGameResultFromEvent(receipt);
+    //         console.log('Actual game result:', gameResult);
+    //         return gameResult; 
+    //     } catch (error) {
+    //         console.error('Error in playGame:', error);
+    //         throw error;
+    //     }
+    // }
 
-if (!requestEvent) {
-    throw new Error('RequestedRandomNumber event not found');
-}
+    // New method to retrieve game result from event logs
+    private async getGameResultFromEvent(receipt: ethers.ContractTransactionReceipt): Promise<GameResult> {
+        // Create a contract instance
+        const contract = new ethers.Contract(GAME_CONTRACT_ADDRESS, GAME_CONTRACT_ABI, this.provider);
 
-// const requestId = this.gameContract.interface.parseLog(requestEvent).args[0];
-
-const requestId = this.gameContract.interface.parseLog(requestEvent)?.args[0];
-if (!requestId) {
-    throw new Error('Failed to parse RequestedRandomNumber event');
-}
-
-console.log('VRF request ID:', requestId.toString());
-
-            // Step 2: Wait for VRF fulfillment
-
-// Add this code after getting the requestId:
-// Get VRF Coordinator and fulfill request
-const vrfCoordinatorAddress = await this.gameContract.getVRFCoordinator();
-const vrfCoordinator = new ethers.Contract(
-    vrfCoordinatorAddress,
-    MockVRFCoordinatorV2Simple.abi,
-    this.signer
-);
-
-console.log('Fulfilling VRF request...');
-const fulfillTx = await vrfCoordinator.fulfillRandomWords(requestId);
-await fulfillTx.wait();
-console.log('VRF request fulfilled');
-
-
-            return new Promise((resolve, reject) => {
-                console.log('Setting up GameResult event listener...');
-                
-                // Create the listener function
-                const listener = (
-                    player: string,
-                    reqId: bigint,
-                    gameId: bigint,
-                    isWinner: boolean,
-                    betAmount: bigint,
-                    amountWon: bigint,
-                    isBonus: boolean,
-                    resultIsHead: boolean
-                ) => {
-                    // Only process if this event is for our request
-                    if (reqId.toString() !== requestId.toString()) {
-                        console.log('Ignoring event for different request ID');
-                        return;
-                    }
-
-                    clearTimeout(timeout);
-                    this.gameContract.removeListener('GameResult', listener);
-                    
-                    console.log('Game result received:', {
-                        player,
-                        requestId: reqId.toString(),
-                        gameId: gameId.toString(),
-                        isWinner,
-                        betAmount: betAmount.toString(),
-                        amountWon: amountWon.toString(),
-                        isBonus,
-                        resultIsHead
-                    });
-
-                    resolve({
-                        isWin: isWinner,
-                        betAmount: ethers.formatUnits(betAmount, 18),
-                        amountWon: isWinner ? ethers.formatUnits(amountWon, 18) : '0',
-                        bonus: isBonus,
-                        isHead: resultIsHead,
-                        requestId: reqId.toString(),
-                        gameId: gameId.toString()
-                    });
-                };
-                
-                // Set timeout for VRF fulfillment (3 minutes)
-                const timeout = setTimeout(() => {
-                    this.gameContract.removeListener('GameResult', listener);
-                    console.error('Timeout waiting for game result. Request ID:', requestId);
-                    reject(new Error('Timeout waiting for game result'));
-                }, 1800); // 3 minute timeout
-
-                // Listen for GameResult event
-                this.gameContract.on('GameResult', listener);
-                console.log('GameResult event listener set up successfully');
-            });
-        } catch (error) {
-            console.error('Error in playGame:', error);
-            throw error;
+        // Filter for the 'GameResult' event
+        const gameResultEvent = contract.interface.getEvent("GameResult");
+        if (!gameResultEvent) {
+            throw new Error('GameResult event not found in contract ABI');
         }
+        
+        const gameResultEvents = receipt.logs.filter(log => {
+            return log.topics[0] === gameResultEvent.topicHash;
+        });
+
+        // Parse each event
+        for (const gameResultEvent of gameResultEvents) {
+            const eventData = contract.interface.parseLog(gameResultEvent);
+            if (!eventData?.args) continue;  // Skip if no event data or args
+            
+            const { player, gameId, isWinner, betAmount, amountWon, bonus, isHead } = eventData.args;
+
+            console.log(`
+                Player: ${player}
+                Game ID: ${gameId}
+                Is Winner: ${isWinner}
+                Bet Amount: ${betAmount}
+                Amount Won: ${amountWon}
+                Bonus: ${bonus}
+                Is Head: ${isHead}
+            `);
+
+            return {
+                isWin: isWinner,
+                betAmount: ethers.formatUnits(betAmount, 18),
+                amountWon: ethers.formatUnits(amountWon, 18),
+                bonus: bonus,
+                isHead: isHead,
+                requestId: '0', // Not available in the event
+                gameId: gameId.toString(),
+                fulfilled: true,
+                pending: false
+            };
+        }
+
+        throw new Error('GameResult event not found for the given transaction receipt');
     }
+
+
 
     async play(isHead: boolean, betAmount: bigint): Promise<GameResult> {
         try {
             console.log('Starting play function with:', { isHead, betAmount: betAmount.toString() });
             
-            // Check allowance first
-            console.log('Checking allowance...');
+            // Check and approve allowance if needed
             const allowance = await this.checkAllowance();
-            console.log('Current allowance:', allowance.toString());
-            
             if (allowance < betAmount) {
-                console.log('Insufficient allowance, requesting approval...');
                 const approveTx = await this.approveBet(betAmount);
-                console.log('Waiting for approval transaction confirmation...');
                 await approveTx.wait();
-                console.log('Approval transaction confirmed');
             }
-
+    
             // Place the bet
-            console.log('Placing bet on the contract...');
             const tx = await this.gameContract.play(isHead);  
             console.log('Bet transaction sent:', tx.hash);
-
+    
             // Wait for transaction confirmation
-            console.log('Waiting for transaction confirmation...');
             const receipt = await tx.wait();
             console.log('Transaction confirmed:', receipt.hash);
-
-            // Get the game ID from the transaction receipt
-            console.log('Extracting game ID from receipt...');
-            const gameId = await this.getGameIdFromReceipt(receipt);
-            console.log('Game ID:', gameId.toString());
-
-            // Return a pending result immediately
-            const pendingResult: GameResult = {
-                isWin: false,
-                betAmount: ethers.formatUnits(betAmount, 18),
-                amountWon: '0',
-                bonus: false,
-                isHead: isHead,
-                requestId: '0',
-                gameId: gameId.toString(),
-                transactionDetails: {
-                    transactionHash: tx.hash,
-                    from: receipt.from,
-                    to: GAME_CONTRACT_ADDRESS,
-                    status: receipt.status === 1,
-                    blockNumber: receipt.blockNumber,
-                    timestamp: Date.now()
-                },
-                fulfilled: false,
-                pending: true
-            };
-
-            return pendingResult;
-
+    
+            try {
+                // Directly retrieve the game result from the transaction receipt
+                const gameResult = await this.waitForGameResultEvent(receipt);
+                console.log('Game result retrieved:', gameResult);
+                return gameResult;
+            } catch (resultError) {
+                console.error('Error retrieving game result from receipt:', resultError);
+                
+                // Fallback: Try to fetch event by transaction hash
+                try {
+                    const events = await this.gameContract.queryFilter(
+                        this.gameContract.filters.GameResult(), 
+                        receipt.blockNumber, 
+                        receipt.blockNumber
+                    );
+    
+                    const matchingEvent = events.find(
+                        event => event.transactionHash === receipt.hash
+                    );
+    
+                    if (matchingEvent) {
+                        // Parse the event manually
+                        
+                        const { player, gameId, isWinner, betAmount, amountWon, bonus, isHead } = (matchingEvent as any).args;
+                        return {
+                            isWin: isWinner,
+                            betAmount: ethers.formatUnits(betAmount, 18),
+                            amountWon: isWinner ? ethers.formatUnits(amountWon, 18) : '0',
+                            bonus: bonus,
+                            isHead: isHead,
+                            requestId: '0',
+                            gameId: gameId.toString(),
+                            fulfilled: true,
+                            pending: false
+                        };
+                    }
+                } catch (fetchError) {
+                    console.error('Error fetching event by query:', fetchError);
+                }
+    
+                // If all else fails, return a pending result
+                return {
+                    isWin: undefined,
+                    betAmount: ethers.formatUnits(betAmount, 18),
+                    amountWon: '0',
+                    bonus: false,
+                    isHead: isHead,
+                    requestId: '0',
+                    gameId: 'pending',
+                    fulfilled: false,
+                    pending: true
+                };
+            }
         } catch (error) {
-            console.error('Error in play function:', {
-                error,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                stack: error instanceof Error ? error.stack : undefined
-            });
+            console.error('Error in play function:', error);
             throw error;
         }
     }
@@ -386,6 +356,17 @@ console.log('VRF request fulfilled');
             console.log('Checking game result for game ID:', gameId);
             const gameStatus = await this.gameContract.gameStatus(BigInt(gameId));
             
+            // Log raw game status for debugging
+            console.log('Raw game status:', {
+                isWinner: gameStatus.isWinner,
+                betAmount: gameStatus.betAmount.toString(),
+                amountWon: gameStatus.amountWon.toString(),
+                isBonus: gameStatus.isBonus,
+                isHead: gameStatus.isHead,
+                requestId: gameStatus.requestId?.toString(),
+                fulfilled: gameStatus.fulfilled
+            });
+
             // Format the result
             const result: GameResult = {
                 isWin: gameStatus.isWinner,
@@ -399,10 +380,14 @@ console.log('VRF request fulfilled');
                 pending: !gameStatus.fulfilled
             };
 
-            console.log('Game result:', result);
+            console.log('Formatted game result:', result);
             return result;
         } catch (error) {
-            console.error('Error checking game result:', error);
+            console.error('Error checking game result:', {
+                gameId,
+                error: error instanceof Error ? error.message : error,
+                stack: error instanceof Error ? error.stack : undefined
+            });
             throw error;
         }
     }
@@ -475,60 +460,43 @@ console.log("This is new bet BetAmount", BetAmount.toString());
     }
 
     private async getGameIdFromReceipt(receipt: ethers.ContractTransactionReceipt): Promise<bigint> {
-        console.log('Analyzing receipt logs:', receipt.logs);
+        console.log('Analyzing receipt logs:', JSON.stringify(receipt.logs, null, 2));
         
-        // First, try to find RequestedRandomNumber event
-        const requestEvent = receipt.logs.find(log => {
+        // Create a dedicated interface for parsing
+        const gameResultInterface = new ethers.Interface([
+            "event GameResult(address indexed player, uint256 gameId, bool isWinner, uint256 betAmount, uint256 amountWon, bool bonus, bool isHead)"
+        ]);
+
+        // Try parsing each log
+        for (const log of receipt.logs) {
             try {
-                const parsedLog = this.gameContract.interface.parseLog({
+                const parsedLog = gameResultInterface.parseLog({
                     topics: log.topics,
                     data: log.data
                 });
-                console.log('Parsed log:', parsedLog?.name);
-                return parsedLog?.name === 'RequestedRandomNumber';
-            } catch (error) {
-                console.log('Failed to parse log:', error);
-                return false;
-            }
-        });
+               
+                // Check if this is a GameResult event
+                if (parsedLog && parsedLog.name === 'GameResult') {
+                    console.log('Found GameResult event:', {
+                        name: parsedLog.name,
+                        args: parsedLog.args ? parsedLog.args.map(arg => arg.toString()) : 'No args'
+                    });
 
-        if (!requestEvent) {
-            console.log('All available events:', receipt.logs.map(log => {
-                try {
-                    const parsedLog = this.gameContract.interface.parseLog({
-                        topics: log.topics,
-                        data: log.data
-                    });
-                    console.log('Event:', {
-                        name: parsedLog?.name,
-                        args: parsedLog?.args
-                    });
-                    return parsedLog?.name;
-                } catch {
-                    return 'unparseable';
+                    // The gameId is the second argument (index 1)
+                    const gameId = parsedLog.args[1];
+                    console.log('Successfully extracted game ID:', gameId.toString());
+
+                    return gameId;
                 }
-            }));
-            throw new Error('RequestedRandomNumber event not found in transaction receipt');
+            } catch (error) {
+                console.log('Parsing log failed:', error);
+            }
         }
 
-        const parsedEvent = this.gameContract.interface.parseLog({
-            topics: requestEvent.topics,
-            data: requestEvent.data
-        });
-
-        if (!parsedEvent || !parsedEvent.args) {
-            console.log('Failed to parse event args:', parsedEvent);
-            throw new Error('Failed to parse game event');
-        }
-
-        const requestId = parsedEvent.args.requestId;
-        console.log('Successfully extracted request ID:', requestId.toString());
-
-        // Since we have the request ID, we can use it as the game ID
-        // The contract uses the request ID to track the game
-        return requestId;
+        // If no GameResult event is found
+        throw new Error('GameResult event not found in transaction receipt');
     }
-
+    
     async pollForGameResult(requestId: string, maxAttempts: number = 60): Promise<GameResult> {
         let attempts = 0;
         const POLL_INTERVAL = 5000; // 5 seconds
@@ -674,84 +642,74 @@ console.log("This is new bet BetAmount", BetAmount.toString());
             throw error;
         }
     }
-
     private async waitForGameResultEvent(receipt: ethers.ContractTransactionReceipt): Promise<GameResult> {
         try {
             console.log('Starting waitForGameResultEvent with receipt:', {
                 hash: receipt.hash,
                 blockNumber: receipt.blockNumber,
-                status: receipt.status
+                status: receipt.status,
+                totalLogs: receipt.logs.length
             });
             
             if (!receipt) {
                 throw new Error('Transaction receipt is null');
             }
-
-            // Analyze initial transaction
-            console.log('Analyzing transaction receipt...');
-            const txDetails = await this.analyzeTransactionReceipt(receipt);
-            console.log('Transaction details:', txDetails);
-
-            // Find RequestedRandomNumber event
-            console.log('Searching for RequestedRandomNumber event...');
-            const requestEvent = receipt.logs.find(
-                (log: ethers.Log) => {
+    
+            // Create a dedicated interface for parsing
+            const gameResultInterface = new ethers.Interface([
+                "event GameResult(address indexed player, uint256 gameId, bool isWinner, uint256 betAmount, uint256 amountWon, bool bonus, bool isHead)"
+            ]);
+    
+            // Log all raw log data for debugging
+            console.log('Raw log data:', receipt.logs.map(log => ({
+                topics: log.topics,
+                data: log.data
+            })));
+    
+            // Try parsing each log
+            const gameResultEvents = receipt.logs
+                .map(log => {
                     try {
-                        const parsedLog = this.gameContract.interface.parseLog({
+                        const parsedLog = gameResultInterface.parseLog({
                             topics: log.topics,
                             data: log.data
                         });
-                        return parsedLog?.name === 'RequestedRandomNumber';
-                    } catch (error) {
-                        console.log('Error parsing log:', error);
-                        return false;
-                    }
-                }
-            );
-
-            if (!requestEvent) {
-                console.error('RequestedRandomNumber event not found in logs:', {
-                    totalLogs: receipt.logs.length,
-                    logTypes: receipt.logs.map(log => {
-                        try {
-                            return this.gameContract.interface.parseLog({
-                                topics: log.topics,
-                                data: log.data
-                            })?.name;
-                        } catch {
-                            return 'unparseable';
+    
+                        if (parsedLog && parsedLog.name === 'GameResult') {
+                            console.log('Parsed GameResult event:', parsedLog);
+    
+                            const [player, gameId, isWinner, betAmount, amountWon, bonus, isHead] = parsedLog.args;
+    
+                            return {
+                                isWin: isWinner,
+                                betAmount: ethers.formatUnits(betAmount, 18),
+                                amountWon: isWinner ? ethers.formatUnits(amountWon, 18) : '0',
+                                bonus: bonus,
+                                isHead: isHead,
+                                requestId: '0',
+                                gameId: gameId.toString(),
+                                fulfilled: true,
+                                pending: false
+                            };
                         }
-                    })
-                });
-                throw new Error('RequestedRandomNumber event not found');
+                        return null;
+                    } catch (error) {
+                        console.error('Error parsing specific log:', error);
+                        return null;
+                    }
+                })
+                .filter(Boolean) as GameResult[];
+    
+            if (gameResultEvents.length === 0) {
+                throw new Error('No GameResult event found in transaction receipt');
             }
-
-            console.log('Found RequestedRandomNumber event, parsing...');
-            const parsedRequestEvent = this.gameContract.interface.parseLog({
-                topics: requestEvent.topics,
-                data: requestEvent.data
-            });
-            
-            if (!parsedRequestEvent || !parsedRequestEvent.args) {
-                throw new Error('Unable to parse RequestedRandomNumber event');
-            }
-
-            const requestId = parsedRequestEvent.args.requestId;
-            console.log('Random number requested with ID:', requestId.toString());
-
-            // Use polling to get game result
-            console.log('Starting to poll for game result...');
-            const result = await this.pollForGameResult(requestId);
-            console.log('Game result received from polling:', result);
-
+    
+            const result = gameResultEvents[0];
+            console.log('Final game result:', result);
             return result;
-
+    
         } catch (error) {
-            console.error('Error in waitForGameResultEvent:', {
-                error,
-                message: error instanceof Error ? error.message : 'Unknown error',
-                stack: error instanceof Error ? error.stack : undefined
-            });
+            console.error('Error in waitForGameResultEvent:', error);
             throw error;
         }
     }

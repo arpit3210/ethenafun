@@ -17,7 +17,7 @@ contract HeadOrTailTokenGame is Ownable {
 
     uint256 private constant DECIMALS = 10 ** 18;
     uint256[] public allowedBetAmounts;
-
+ event RandomNumber(uint256);
     event GameResult(
         address indexed player,
         uint256 gameId,
@@ -65,7 +65,7 @@ contract HeadOrTailTokenGame is Ownable {
                 )
             )
         ) % 100;
-
+        emit RandomNumber(randomNumber);
         bool result = randomNumber % 2 == 0;  // Even = Head, Odd = Tail
         bool isWinner = (result == choice);
         bool bonusRound = randomNumber < bonusRate;
@@ -174,3 +174,6 @@ contract HeadOrTailTokenGame is Ownable {
         return totalTail;
     }
 }
+
+
+// new contract 0x5F7cB6FeE571c5BEBb9f3E415c39F0Ce01684b70

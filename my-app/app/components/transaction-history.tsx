@@ -75,7 +75,7 @@ export default function TransactionHistory() {
                   </Link>
                 </div>
                 <div className={`${tx.profit >= 0 ? "text-green-500" : "text-red-500"} font-medium`}>
-                  {tx.profit >= 0 ? "+" : ""}{tx.profit} U2U
+                  {tx.profit >= 0 ? "+" : ""}{tx.profit} USDe
                 </div>
                 <div>
                   <Link href="#" className="text-blue-400 hover:underline transition-all duration-
