@@ -1,75 +1,92 @@
-# Hardhat files
-hardhat.config.js
-hardhat.config.ts
-.env
-.env.example
-
-# coverage files
-coverage
-lcov-report
-
-# dependency directories
+# Dependency directories
 node_modules/
+jspm_packages/
 
-# logs
+# Hardhat files
+cache/
+artifacts/
+typechain/
+typechain-types/
+
+# Testing
+coverage/
+coverage.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Logs
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pids
-*.pid
-*.seed
-*.pid.lock
+lerna-debug.log*
 
-# runtime data
-runtime/
+# Optional npm cache directory
+.npm
 
-# temporary files
-*.sublime-project
-*.sublime-workspace
-*.swp
+# Optional eslint cache
+.eslintcache
 
-# tests
-test
-tests
+# Build output
+dist/
+build/
+out/
 
-# yarn/integrity files
-.yarn-integrity
+# Gas report
+gas-report.txt
 
-# local development
-.development
-.env.local
-.env.development.local
-.env.production.local
-.env.test.local
+# Solidity coverage
+coverage/
+coverage.json
 
-# vercel
-.vercel
-.env.build
-.env.local.build
-.env.production.build
-.env.staging.build
-.env.test.build
+# Deployments
+deployments/
 
-# caching files
-.cache/
-.next/
+# Local Netlify folder
+.netlify
 
-# misc
+# Mac OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
+
+# Windows
 Thumbs.db
 desktop.ini
-node_modules/
-npm-debug.log
-yarn-error.log
 
-# hardhat cache
-artifacts
-cache
-typechain
+# Contract size output
+.contract-sizer/
+
+# Hardhat local network
+/deployments/localhost/
+
+# Tenderly
+.tenderly/
+
+# Foundry
+forge-cache/
+out/
+
+# Debug files
+*.debug
+debug/
+
+# Temporary files
+*.swp
+*.swo
+*~

@@ -24,7 +24,7 @@ export default function GameCard({ title, bgColor, image, href }: GameCardProps)
         </div>
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/60 to-transparent">
           <h3 className="text-xl font-bold text-white text-center group-hover:gradient-text transition-all duration-300">{title}</h3>
-          <p className="text-white/80 text-center text-sm">blockfun.io</p>
+          <p className="text-white/80 text-center text-sm">Play Now</p>
         </div>
       </div>
     </Link>

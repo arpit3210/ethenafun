@@ -5,19 +5,19 @@ import Sidebar from "./components/sidebar"
 import GameCard from "./components/game-card"
 import Banner from "./components/banner"
 import TransactionHistory from "./components/transaction-history"
+import ConnectButton from "./components/ConnectButton"
+
 import Footer from "./components/footer"
 
 export default function Home() {
   return (
     <div className="min-h-screen text-white">
-      <header className="flex items-center justify-between px-4 lg:px-6 py-4 glass-effect">
+      <header className="flex justify-between items-center p-4 lg:p-6">
         <div className="flex items-center gap-2">
           <MobileNav />
           <div className="text-xl lg:text-2xl font-bold tracking-tighter gradient-text">ETHENAFUN</div>
         </div>
-        <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-medium px-4 lg:px-6 transition-all duration-300 ease-in-out transform hover:scale-105">
-          CONNECT WALLET
-        </Button>
+        <ConnectButton />
       </header>
       
       <div className="flex">
@@ -45,25 +45,25 @@ export default function Home() {
               <GameCard
                 title="HEAD OR TAIL"
                 bgColor="from-purple-500 to-indigo-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/head-or-tail.png"
                 href="/head-or-tail"
               />
               <GameCard
                 title="SINGLE DICE"
                 bgColor="from-green-500 to-teal-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/single-dice.png"
                 href="/single-dice"
               />
               <GameCard
                 title="DOUBLE DICE"
                 bgColor="from-blue-500 to-cyan-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/double.png"
                 href="/double-dice"
               />
               <GameCard
                 title="ROCK-PAPER-SCISSORS"
                 bgColor="from-red-500 to-orange-500"
-                image="/placeholder.svg?height=200&width=200"
+                image="/home_images/rock-papper.jpg"
                 href="/rock-paper"
               />
             </div>

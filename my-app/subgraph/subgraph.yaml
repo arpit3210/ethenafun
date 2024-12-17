@@ -1,0 +1,28 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum
+    name: HeadOrTailGame
+    network: sepolia
+    source:
+      address: "${GAME_CONTRACT_ADDRESS}"
+      abi: HeadOrTailGame
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Game
+        - Player
+        - GameStats
+      abis:
+        - name: HeadOrTailGame
+          file: ./abis/HeadOrTailGame.json
+      eventHandlers:
+        - event: GameResult(address indexed player, uint256 indexed requestId, uint256 indexed gameId, bool isWinner, uint256 betAmount, uint256 amountWon, bool bonus, bool isHead)
+          handler: handleGameResult
+        - event: GameCreated(address indexed player, uint256 indexed requestId, uint256 indexed gameId, bool isHead)
+          handler: handleGameCreated
+      file: ./src/mapping.ts
