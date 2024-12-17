@@ -1,0 +1,75 @@
+# Hardhat files
+hardhat.config.js
+hardhat.config.ts
+.env
+.env.example
+
+# coverage files
+coverage
+lcov-report
+
+# dependency directories
+node_modules/
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# runtime data
+runtime/
+
+# temporary files
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# tests
+test
+tests
+
+# yarn/integrity files
+.yarn-integrity
+
+# local development
+.development
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# vercel
+.vercel
+.env.build
+.env.local.build
+.env.production.build
+.env.staging.build
+.env.test.build
+
+# caching files
+.cache/
+.next/
+
+# misc
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# hardhat cache
+artifacts
+cache
+typechain
