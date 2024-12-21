@@ -61,6 +61,19 @@ export function ContractEventsViewer({
     }
   };
 
+
+
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      fetchContractEvents();
+    }, 10000);
+
+    return () => clearInterval(intervalId);
+  }, []);
+
+
+
   // Fetch contract events
   const fetchContractEvents = async () => {
     try {
@@ -178,7 +191,7 @@ export function ContractEventsViewer({
               disabled={isLoading}
               className="mb-4"
             >
-              {isLoading ? 'Fetching Events...' : 'Refresh'}
+              {/* {isLoading ? 'Fetching Events...' : 'Refresh'} */}
             </Button>
           </div>
 
@@ -233,3 +246,6 @@ export function ContractEventsViewer({
     </div>
   );
 }
+
+
+
