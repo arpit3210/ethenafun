@@ -206,7 +206,7 @@ export function ContractEventsViewer({
                     <tr className='border-b my-10 py-10 transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted' key={index}>
                       <td>
                         <a 
-                          href={`https://etherscan.io/tx/${event.transactionHash}`} 
+                          href={`https://testnet.explorer.ethena.fi/tx/${event.transactionHash}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-blue-800 hover:underline"

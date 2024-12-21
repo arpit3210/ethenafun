@@ -24,7 +24,7 @@ const ConnectButton = () => {
 
   const openEtherscan = () => {
     if (account) {
-      window.open(`https://testnet.ethena.fi/address/${account}`, '_blank');
+      window.open(`https://testnet.explorer.ethena.fi/address/${account}`, '_blank');
     }
   };
 

@@ -182,7 +182,7 @@ export default function EventPage() {
                     <tr key={index}>
                       <td>
                         <a 
-                          href={`https://etherscan.io/tx/${event.transactionHash}`} 
+                          href={`https://testnet.explorer.ethena.fi/tx/${event.transactionHash}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline"
