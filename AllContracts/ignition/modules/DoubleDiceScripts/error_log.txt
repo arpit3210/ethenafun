@@ -1,0 +1,8 @@
+Error: Error: Cannot find module '../../artifacts/contracts/EthenaUSDe.sol/EthenaUSDe.json'
+Require stack:
+- D:\2-6_plan_work daily\Web3 Projects\Ethena-Hackathon-project\ethenafun\AllContracts\ignition\modules\DoubleDiceScripts\FundContract.js
+- D:\2-6_plan_work daily\Web3 Projects\Ethena-Hackathon-project\ethenafun\AllContracts\hardhat.config.js
+- D:\2-6_plan_work daily\Web3 Projects\Ethena-Hackathon-project\ethenafun\AllContracts\node_modules\hardhat\internal\core\config\config-loading.js
+- D:\2-6_plan_work daily\Web3 Projects\Ethena-Hackathon-project\ethenafun\AllContracts\node_modules\hardhat\internal\cli\cli.js
+- D:\2-6_plan_work daily\Web3 Projects\Ethena-Hackathon-project\ethenafun\AllContracts\node_modules\hardhat\internal\cli\bootstrap.js
+
