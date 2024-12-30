@@ -165,13 +165,13 @@ export default function HeadOrTail() {
                   isRotating && "animate-spin"
                 )}>
                   {selectedSide === null && (
-                    <Image src="/home_images/head-or-tail.png" alt="coin" fill />
+                    <Image className='animate-bounce' src="/home_images/head-or-tail.png" alt="coin" fill />
                   )}
                   {selectedSide === 'HEAD' && (
-                    <Image src="/home_images/head.png" alt="head" fill />
+                    <Image className='animate-bounce'  src="/home_images/head.png" alt="head" fill />
                   )}
                   {selectedSide === 'TAIL' && (
-                    <Image src="/home_images/tail.png" alt="tail" fill />
+                    <Image className='animate-bounce'  src="/home_images/tail.png" alt="tail" fill />
                   )}
                 </div>
               </div>
