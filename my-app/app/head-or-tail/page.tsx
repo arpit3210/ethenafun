@@ -161,20 +161,20 @@ export default function HeadOrTail() {
 
               <div className="flex items-center justify-center">
                 <div className={cn(
-                  "relative w-64 h-64 transition-transform duration-1000",
-                  isRotating && "animate-spin"
+                  "relative w-64 h-64 transition-transform duration-1000 ",
+                  isRotating && " animate-bounce"
                 )}>
                   {selectedSide === null && (
-                    <Image className='animate-bounce' src="/home_images/head-or-tail.png" alt="coin" fill />
+                    <Image className='shadow-lg   ' src="/home_images/head-or-tail.png" width={200} height={200} alt="coin" />
                   )}
                   {selectedSide === 'HEAD' && (
-                    <Image className='animate-bounce'  src="/home_images/head.png" alt="head" fill />
+                    <Image className='shadow-60 shadow-2xl shadow-[#edc93a] animate-pulse-shadow rounded-full overflow-hidden border-4 border-[#ddb534]'  src="/home_images/head.png" width={150} height={150} alt="head"  />
                   )}
                   {selectedSide === 'TAIL' && (
-                    <Image className='animate-bounce'  src="/home_images/tail.png" alt="tail" fill />
+                    <Image className='shadow-60 shadow-2xl shadow-[#edc93a] animate-pulse-shadow rounded-full overflow-hidden border-4 border-[#ddb534]'  src="/home_images/tail.png" width={150} height={150} alt="tail"  />
                   )}
                 </div>
-              </div>
+              </div>  
             </div>
           </div>
 
