@@ -161,7 +161,7 @@ export default function HeadOrTail() {
 
               <div className="flex items-center justify-center">
                 <div className={cn(
-                  "relative w-64 h-64 transition-transform duration-1000 ",
+                  "relative w-64 h-64 transition-transform duration-1000 flex items-center justify-center ",
                   isRotating && " animate-bounce"
                 )}>
                   {selectedSide === null && (
@@ -200,7 +200,7 @@ export default function HeadOrTail() {
                   limit={10}
                   onError={(errorMessage) => {
                     // Optional: Handle errors (e.g., log to error tracking service)
-                    console.error('Events fetch error:', errorMessage);
+                    console.log('Events fetch error:', errorMessage);
                   }}
                 />
                 {/* <Table>
