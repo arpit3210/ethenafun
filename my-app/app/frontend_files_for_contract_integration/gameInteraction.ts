@@ -279,6 +279,8 @@ export class GameInteraction {
             
             // Check and approve allowance if needed
             const allowance = await this.checkAllowance();
+            console.log('Current allowance:', allowance.toString());
+            console.log('Bet amount:', betAmount.toString());
             if (allowance < betAmount) {
                 const approveTx = await this.approveBet(betAmount);
                 await approveTx.wait();
