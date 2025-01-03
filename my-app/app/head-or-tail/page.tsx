@@ -119,7 +119,7 @@ export default function HeadOrTail() {
                 <div className="space-y-4">
                   <h3 className="text-sm font-medium text-zinc-400">AMOUNT</h3>
                   <div className="relative">
-                    <input
+                    {/* <input
                       type="text"
                       value={amount}
                       onChange={(e) => handleAmountChange(e.target.value)}
@@ -130,7 +130,26 @@ export default function HeadOrTail() {
                       onClick={handleMaxAmount}
                     >
                       MAX
-                    </Button>
+                    </Button> */}
+
+                    <div className="grid grid-cols-5 gap-2">
+                      {[0.1, 0.2, 0.3, 0.4, 0.5].map((value) => (
+                        <Button
+                          key={value}
+                          className={cn(
+                            "h-12",
+                            Number(amount) === value
+                              ? "bg-[#7C3AED] hover:bg-[#6D28D9]"
+                              : "border-zinc-700 hover:bg-zinc-800"
+                          )}
+                          onClick={() => handleAmountChange(`${value}`)}
+                        >
+                          ${value}
+                        </Button>
+                      ))}
+                    </div>
+
+
                   </div>
                 </div>
 
