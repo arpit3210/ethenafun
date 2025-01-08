@@ -5,6 +5,7 @@ import { useWeb3Context } from '../context/Web3Context';
 import { Button } from "@/components/ui/button";
 import { Copy, ExternalLink, Power } from 'lucide-react';
 import { truncateAddress } from '../utils/format';
+import { formatUSDe } from '../frontend_files_for_contract_integration/contractConfig';
 
 const ConnectButton = () => {
   const {
@@ -76,7 +77,7 @@ const ConnectButton = () => {
         <div className="flex lg:flex items-center gap-2">
           <div className="text-sm">
             <span className="text-muted-foreground ">Balance: </span>
-            <span className="font-medium">{balance} USDe</span>
+            <span className="font-medium">{formatUSDe(balance)} USDe</span>
           </div>
           <Button variant="outline" className="gap-2" onClick={copyAddress}>
             <Copy className="h-4 w-4" />
