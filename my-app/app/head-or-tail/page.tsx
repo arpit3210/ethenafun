@@ -38,7 +38,7 @@ export default function HeadOrTail() {
 
   const [isRotating, setIsRotating] = useState(false);
 
-  const CONTRACT_ADDRESS = '0x81AAdF737Dc270F3C53B0a02C266d60Cd39Ca250';
+  const CONTRACT_ADDRESS = '0x5379e1D9763E9ef5B080f9e6B8b8f87Aab26aA20';
 
   // Contract ABI for parsing events
   const CONTRACT_ABI = [
@@ -148,8 +148,6 @@ export default function HeadOrTail() {
                         </Button>
                       ))}
                     </div>
-
-
                   </div>
                 </div>
 

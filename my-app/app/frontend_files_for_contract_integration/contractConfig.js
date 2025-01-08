@@ -1,19 +1,15 @@
 import { ethers } from 'ethers';
 
 // Contract Addresses
-export const GAME_CONTRACT_ADDRESS = "0x81AAdF737Dc270F3C53B0a02C266d60Cd39Ca250";
+// export const GAME_CONTRACT_ADDRESS = "0x81AAdF737Dc270F3C53B0a02C266d60Cd39Ca250";
+export const GAME_CONTRACT_ADDRESS = "0x5379e1D9763E9ef5B080f9e6B8b8f87Aab26aA20";
 export const TOKEN_CONTRACT_ADDRESS = "0x426E7d03f9803Dd11cb8616C65b99a3c0AfeA6dE";
 export const VRF_COORDINATOR = "0x9b55C20577A00e8B6E665D29EFf28CC66B4a2aBC";
 
 // Contract ABIs
-export const GAME_CONTRACT_ABI = [
+export const GAME_CONTRACT_ABI =  [
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "_vrfCoordinator",
-        "type": "address"
-      },
       {
         "internalType": "address",
         "name": "_gameTokenAddress",
@@ -31,12 +27,6 @@ export const GAME_CONTRACT_ABI = [
         "internalType": "address",
         "name": "player",
         "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
       },
       {
         "indexed": false,
@@ -101,13 +91,13 @@ export const GAME_CONTRACT_ABI = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "uint256",
-        "name": "requestId",
+        "name": "",
         "type": "uint256"
       }
     ],
-    "name": "RequestedRandomNumber",
+    "name": "RandomNumber",
     "type": "event"
   },
   {
@@ -123,55 +113,6 @@ export const GAME_CONTRACT_ABI = [
       {
         "internalType": "uint256",
         "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "gameStatus",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "fees",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "randomWord",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "player",
-        "type": "address"
-      },
-      {
-        "internalType": "bool",
-        "name": "isWinner",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "fulfilled",
-        "type": "bool"
-      },
-      {
-        "internalType": "bool",
-        "name": "isHead",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "betAmount",
         "type": "uint256"
       }
     ],
@@ -207,6 +148,19 @@ export const GAME_CONTRACT_ABI = [
   {
     "inputs": [],
     "name": "getBonus",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getBonusRate",
     "outputs": [
       {
         "internalType": "uint256",
@@ -257,13 +211,19 @@ export const GAME_CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getVRFCoordinator",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "isValidBetAmount",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bool",
         "name": "",
-        "type": "address"
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -288,34 +248,21 @@ export const GAME_CONTRACT_ABI = [
         "internalType": "bool",
         "name": "choice",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "betAmount",
+        "type": "uint256"
       }
     ],
     "name": "play",
     "outputs": [
       {
-        "internalType": "uint256",
+        "internalType": "bool",
         "name": "",
-        "type": "uint256"
+        "type": "bool"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "requestId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256[]",
-        "name": "randomWords",
-        "type": "uint256[]"
-      }
-    ],
-    "name": "rawFulfillRandomWords",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -329,12 +276,38 @@ export const GAME_CONTRACT_ABI = [
   {
     "inputs": [
       {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      }
+    ],
+    "name": "setAllowedBetAmounts",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint256",
         "name": "_bonus",
         "type": "uint256"
       }
     ],
     "name": "setBonus",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_bonusRate",
+        "type": "uint256"
+      }
+    ],
+    "name": "setBonusRate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

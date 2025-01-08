@@ -287,7 +287,7 @@ export class GameInteraction {
             }
     
             // Place the bet
-            const tx = await this.gameContract.play(isHead);  
+            const tx = await this.gameContract.play(isHead, betAmount);  
             console.log('Bet transaction sent:', tx.hash);
     
             // Wait for transaction confirmation

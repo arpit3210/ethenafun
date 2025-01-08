@@ -32,7 +32,7 @@ export function ContractEventsViewer({
   contractAddress,
   contractABI,
   eventName,
-  limit = 10,
+  limit = 11,
   onError,
   showConnectButton = true,
   connectWallet
@@ -232,7 +232,7 @@ export function ContractEventsViewer({
                         {event.isWinner ? 'Won' : 'Lost'}
                       </td>
                       <td className={event.isWinner ? 'text-green-600' : 'text-red-600'}>
-                        {event.isWinner ? `+${event.amountWon} USDe 🏆` : `-${event.amountWon} USDe`}
+                        {event.isWinner ? `+${event.amountWon} USDe 🏆` : `-${event.betAmount} USDe`}
                       </td>
                       <td className='text-gray-500 '>{event.isHead ? 'Tails' : 'Heads'}</td>
                     </tr>
